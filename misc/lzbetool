@@ -1,0 +1,189 @@
+#!/usr/bin/env tclsh
+# lzbetool - Optional LZ77 utility for use with BEWorld demo
+# License:  Believed to be redistributable
+# Revision: 101003
+
+#---------------------------------------------------------------------
+# Program parameters.
+
+set PROGNAME    "lzbetool"
+set REVISION    "101003"
+
+# The following three parameters shouldn't be changed. For more infor-
+# mation, see the source code.
+
+set LZ_Escape1  "\x01"
+set LZ_Escape2  "\x02"
+set K32         [expr {32 * 1024}]
+
+#---------------------------------------------------------------------
+# Display usage text (if appropriate).
+
+if { $argc < 1 } {
+puts ""
+puts "$PROGNAME rev. $REVISION - Pure-Tcl LZ77 compressor"
+puts ""
+puts "Usage: $PROGNAME FILENAME ... FILENAME"
+puts ""
+puts "Each  FILENAME argument specifies an input-file name  (or path-"
+puts "name).  This program  compresses the specified files and stores"
+puts "the result, in each case,  as FILENAME.lz77.  The output can be"
+puts "used inside the BEWorld demo program,  provided  that it's con-"
+puts "verted  to ASCII  using either  simple hex or  base64 encoding."
+puts "For details, see the BEWorld documentation and source code."
+puts ""
+puts "For text input, the output will typically be about 50% smaller."
+puts "For binary input,  the reduction will be less;  often somewhere"
+puts "between 15% and 35%. Results will vary."
+puts ""
+puts "Warning: This program is only intended for use with small input"
+puts "files. Compression of large files may be slow."
+puts ""
+exit 1
+}
+
+#---------------------------------------------------------------------
+
+# Routine:    maxSubstring
+# Purpose:    Support routine for "lzencode"
+# Arguments:  To be documented
+
+# This routine isn't original,  but it's  believed to be redistributa-
+# ble. It's based on code by Miguel Sofer that was obtained from:
+#
+#     http://wiki.tcl.tk/12390
+
+#---------------------------------------------------------------------
+
+proc maxSubstring { index data } {
+    global K32
+
+    set upperBound [expr {[string length $data] - $index}]
+    if { $upperBound >= $K32} {
+        set upperBound [expr {$K32 -1}]
+    }
+
+    set lastPossible [expr {$index + $upperBound -1}]
+
+    if { $index > $K32 } {
+        # Note that this will be expensive for long strings: the
+        # data is copied over at each call. Have yet to find a
+        # better way.
+
+        set data [string range $data \
+            [expr {$index - $K32}] $lastPossible]
+        set index $K32
+        set lastPossible [expr { $index + $upperBound - 1 }]
+    }
+
+    set offset 0
+    set lastIdx [expr {$index + 2}]
+    set toMatch [string range $data $index $lastIdx]
+
+    while {$lastIdx <= $lastPossible} {
+        set matchIdx [string last $toMatch $data \
+            [expr {$lastIdx - $offset -1}]]
+        if {$matchIdx < 0} break
+
+        # Found a match; determine exactly how long it is
+
+        set offset [expr {$index - $matchIdx}]
+        set next [incr lastIdx]
+        while { ($lastIdx <= $lastPossible) && \
+            ([string index $data $lastIdx] eq \
+                [string index $data \
+                    [expr {$lastIdx - $offset}]]) } {
+            incr lastIdx
+        }
+        append toMatch [string range $data $next $lastIdx]
+    }
+
+    set len [expr {$lastIdx - $index}]
+    if {$len < 5} {
+        if {($len == 2) || ($offset > 255)} {
+            return {0 0}
+        }
+    }
+
+    return [list $len $offset]
+}
+
+#---------------------------------------------------------------------
+
+# Routine:    lzencode
+# Purpose:    Compresses data
+# Arguments:  To be documented
+
+# This routine isn't original,  but it's  believed to be redistributa-
+# ble. It's based on code by Miguel Sofer that was obtained from:
+#
+#     http://wiki.tcl.tk/12390
+
+# This routine  compresses the specified data and  returns the result.
+# The input may be either text or binary. The output is binary.
+
+#---------------------------------------------------------------------
+
+proc lzencode { data } {
+    global LZ_Escape1
+    global LZ_Escape2
+    global K32
+
+    set output ""
+    set dataLength [string length $data]
+    append output  [string index  $data 0]
+
+    for {set i 1} {$i < $dataLength} {} {
+        foreach {length offset} [maxSubstring $i $data] break
+        if { $length > 0 } {
+            if { $offset < 255 && $length < 255 } {
+                set offChar [format %c $offset]
+                set lenChar [format %c $length]
+                append output $LZ_Escape1$lenChar$offChar
+            } else {
+                append output $LZ_Escape2
+                append output [binary format S $length]
+                append output [binary format S $offset]
+            }
+            incr i $length
+        } else {
+            set char [string index $data $i]
+            if { ($char  eq $LZ_Escape1) || ($char eq $LZ_Escape2) } {
+                append output $LZ_Escape1
+            }
+            append output $char
+            incr i
+        }
+    }
+
+    return $output
+}
+
+#---------------------------------------------------------------------
+# Main program.
+
+foreach ifname $argv {        ; # Process each input file
+
+    if { [regexp {\.lz77$} $ifname] } {
+        puts "Skipping $ifname, already compressed"
+        continue
+    } else {
+        puts "Compressing $ifname"
+    }
+
+    set ofname "$ifname.lz77" ; # Output filename (or pathname)
+
+    set ifp [open $ifname r]  ; # Read entire input file
+    fconfigure $ifp -translation binary
+    set origdata [read $ifp]
+    close $ifp
+                              ; # Compress the data
+    set result [lzencode $origdata]
+
+    set ofp [open $ofname w]  ; # Write result to output file
+    fconfigure $ofp -translation binary
+    puts -nonewline $ofp $result
+    close $ofp
+
+    puts "Wrote $ofname"      ; # Print a status message
+}

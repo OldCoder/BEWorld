@@ -1,0 +1,311 @@
+#---------------------------------------------------------------------
+# Changes in revision 120422
+
+# Moved changelog into external file CHANGELOG
+# Moved license   into external file LICENSE
+
+#---------------------------------------------------------------------
+# Changes in revision 110923
+
+# Brief summary:
+
+# Brick Engine 5.4 or above  is  now supported  (and  required, though
+# older APIs may be used for testing purposes).
+
+# Multi-frame sprites are now supported,  both for multi-shape classes
+# and for animation purposes.  In the multi-shape case,  shapes may be
+# selected either by name or randomly.
+
+# Added drop shadows,  a "God" mode power-up,  and new objects:  cars,
+# dogs, pigs, and tigers. Added an animated "fire" level.  The game no
+# longer needs OpenGL.  There is now a  goal: Make it to the exit. Ei-
+# ther Control or Space may be used to shoot. License has  changed  to
+# Creative Commons.
+
+# More object properties are supported.  For example,  objects may now
+# have random sizes that fall into a pre-defined range. Attacks by the
+# player may affect them differently,  attacks by them  may affect the
+# player differently, and they may make different sounds under differ-
+# ent circumstances.
+
+# Details:
+
+# (a) Ported the program to the Brick Engine 5.4 API.
+
+# (b) The player may now use either Left-Control or Space to shoot.
+
+# (c) For best results, the following "cmake" rule should be used when
+# Brick is built:
+#
+#     -DCMAKE_BUILD_TYPE:STRING=RELEASE
+#
+# Note: This will help other Brick programs as well as BEWorld.
+
+# (d)  A  "God mode" power-up feature is supported.  The player sprite
+# used in "God mode" and  the amount of time that "God mode" lasts are
+# both configurable.
+
+# (e) Drop shadows are now  supported.  This feature may be enabled or
+# disabled for objects on a per-class and/or per-world basis.
+
+# (f) OpenGL is no longer  needed.  Non-OpenGL mode is now the default
+# (though OpenGL is still supported).  However, the "cmake"  rule men-
+# tioned  previously is  important.  Brick  should be built in RELEASE
+# mode or BEWorld will be too slow.
+
+# (g) Objects  may now be assigned random sizes taken from a specified
+# range. The range may be set on a per-class and/or per-world basis.
+
+# (h) Multi-frame  sprites  are  now  supported,  both for multi-shape
+# classes and for animation purposes.  In the multi-shape case, shapes
+# may be selected either by name or randomly.
+
+# (i) Objects  may now make different sounds in  different circumstan-
+# ces. For example, different sounds may be set for object hit by wea-
+# pon and object destroyed by weapon.  The sounds  in question  may be
+# set on a per-class and/or per-world basis.
+
+# (j) Additional parameters  may now be set on a per-class and/or per-
+# world basis, including:
+#
+# Initial health of an object
+# Health effect on an  object per attack by the player
+# Health effect on the player per attack by an object
+# Score change if an object is destroyed by shooting
+# Distance from player at which an object becomes cautious
+# Whether or not an object can be attacked
+
+# (k) Added tigers. They hide behind trees until the player happens to
+# pass close by. Tigers are similar to the older enemy types but are a
+# little tougher;  they can be destroyed by shooting, but more bullets
+# are required.
+
+# (l) Added dogs and pigs.  Pigs are  simply variations on cows.  Dogs
+# follow the player and are friendly.  They'll fight tigers on his/her
+# behalf (they're evenly matched).
+
+# (m) Money now has different forms, is mobile, and is reluctant to be
+# picked up.
+
+# (n) The red-square enemies  are now known as  Karkinos.  They may be
+# thought of as a type of crab; the crab constellation Cancer is based
+# on the original Karkinos legend.
+
+# (o) Added cars.  The player can drive a car;  while doing so, he/she
+# is safe from  some attacks  but can't shoot  (attempts to shoot will
+# simply beep the car's horn).
+
+# (p) Added a global parameter  BRICKAPI that specifies the  Brick API
+# to use  (5200 for  Brick 5.2, 5300 for Brick 5.3, and 5400 for Brick
+# 5.4).
+
+# For the time being, the program should run under any of the support-
+# ed APIs if BRICKAPI is set correctly.  However,  there are some cav-
+# eats:
+#
+# Older APIs  are only supported for testing  purposes.  When an older
+# API is used, some features will be omitted  and others will be  only
+# partly supported.
+#
+# If Brick 5.2 is used, a "wrap_sprite_position" patch (available sep-
+# arately) must be applied  to the Brick sources and Brick must be re-
+# built. The patch isn't needed for Brick 5.3 or above.
+
+#---------------------------------------------------------------------
+# Changes in revision 101010
+
+# (a) Added a preliminary "help" screen;  it can be accessed using the
+# "h" key.
+
+# (b) Added the  start of a  player inventory (or backpack).  Added an
+# associated "inventory" screen,  which can be accessed using  the "i"
+# key.
+
+# (c) Reorganized the information display. It has two columns now, and
+# a message line has been added.
+
+# (d) Added cows. Presently, cows are simply grazers who happen to eat
+# red enemies.
+
+# (e) Added trees. The player can hide behind trees, but only once per
+# tree and shooting from there breaks cover.
+
+# (f) Added money.  Money  simply goes  into  the  player's inventory;
+# there's no way to spend it yet.
+
+# (g) New subroutine keywords: "dmproc" and "xproc".  "dmproc" extends
+# "proc" and adds some debugging features.  "xproc" extends "proc" and
+# adds support for call-by-reference.
+
+# (h) New sound effects: "moo" and "bonus"  (played  when  a health or
+# financial bonus is received).
+
+# (i) Added  support for a new  data compression format (bxdiv).  It's
+# intended primarily for use with sound data.
+
+# (j) For some  object classes  (including cows, medical kits, and red
+# enemies), object are now given individual names.
+
+# (k) Most object-related  parameters can now be set using either glo-
+# bal defaults or per-world values.
+
+# (l) The main sprite prototype setup routine (make_proto_sprite)  now
+# supports up to 64 colors per sprite.
+
+# (m) Added more documentation.
+
+#---------------------------------------------------------------------
+# Changes in revision 101003
+
+# (a) Notable user-visible items added (summary):  Multiple worlds and
+# inter-world portals.  Scrolls.  Variable-size enemies. Variable-size
+# random maps.  Limbo  (a world that has no map, walls,  or floor  and
+# that  wraps around).  Caspak  (a world that's  simple  but not  very
+# friendly).
+
+# (b) Notable  internal features added  (summary):  "base64" decoding.
+# LZ77 decompression.  Background music is now built-in.  Sprites  can
+# be drawn as simple text diagrams. It's easy to add new worlds and to
+# connect them in different ways. A specified number of enemies may be
+# preloaded.
+
+# (c) "base64"  decoding:  Pure-Tcl support for  "base64" decoding has
+# been added. No external programs or Tcl modules are required for de-
+# coding.
+
+# (d) LZ77 decompression:  Pure-Tcl support for LZ77 decompression has
+# been added. No external programs or Tcl modules are required for de-
+# compression.
+
+# The LZ77 feature  may be  used in conjunction with the "base64" fea-
+# ture to load  binary data from a compressed but ASCII-encoded repre-
+# sentation.
+
+# Note: If you'd like to add  new compressed objects to this  program,
+# you'll  need  to use  a  separate LZ77 compression tool named "lzbe-
+# tool".  "lzbetool" is a short pure-Tcl script that should be availa-
+# ble from the same place as this program.
+
+# (e) Music: Background music is now built into the program; it's rep-
+# resented as  LZ77-compressed and base64-encoded inline data.  No ex-
+# ternal music file  is required.  However,  external  music files are
+# still supported. For more information,  see PlayMusic and MusicFile.
+# Additional minor change: The MusicVolume setting is now optional.
+
+# (f) Sound effects: Sound effects have switched from simple "hex" en-
+# coding to LZ77-compressed and base64-encoded blocks; this makes them
+# significantly smaller.
+
+# (g) Multiple worlds:  The program now  supports multiple  rooms  (or
+# worlds).
+
+# Two types of inter-world portals have been added: "forward" and "re-
+# verse".  These are similar to Netscape  "down" and "up" stairs,  but
+# they can be used more generally. For more information, see the docu-
+# mentation section named "Inter-world portals".
+
+# The multiple-worlds feature works  both  in  random-map  mode  (with
+# RandomMapEnable set to one) and in invariant-map mode (with the par-
+# ameter in question set to zero). However, in invariant-map mode, the
+# coder must  pre-define an invariant map for every world that's going
+# to be used.
+
+# (h) Scrolls:  The game now  includes  scrolls.  Presently, these are
+# "demo" objects that simply display random quotes (or fortunes).  The
+# number of scrolls may be specified on a  per-world basis.  It may be
+# set to zero, a fixed number, or a range.
+
+# (i) Intra-world portals:  The number of  intra-world portals may now
+# be set on a per-world basis.  It may be set to zero, a fixed number,
+# or a range.
+
+# (j) Enemies: Three different red-enemy sizes are now supported.  The
+# size used may be set on a per-world basis. Enemies may be preloaded;
+# i.e., generated as part of world creation. The  number of enemies to
+# preload may be set on a per-world basis.
+
+# (k) Info display:  The info  display  has  been  moved  to  its  own
+# (transparent) layer. The code tries to keep the  info-display  layer
+# on top. The width of the info display is now parameterized. The info
+# display now includes the name of the current world.
+
+# (l) Sprite definitions:  It's easy to  define  sprites  images  now;
+# they're drawn as inline text.  For the time being,  all sprites have
+# switched  to the  inline-text approach.  Some sprites may use  other
+# approaches in the future. For more information about the new conven-
+# tions, see "make_proto_sprite".
+
+# (m) Random maps: Random maps have variable dimensions now. Addition-
+# ally, some bugs in the random-map generator have been fixed.
+
+# (n) Message screens: The arrow keys may now be used to close message
+# boxes  (such  as  those  created  for  the  startup  message  and/or
+# scrolls). The Escape and Q keys still work, as well.
+
+# (o) Miscellaneous: Most of the code has been moved into subroutines.
+# A fair amount of  documentation  has  been added.  Additionally, the
+# program now includes "debug" code. The "debug" code is controlled by
+# a new parameter named DebugLevel.
+
+# There's now a configurable upper limit on the maximum number of bul-
+# lets that can exist  simultaneously in a  given level.  The limit is
+# needed because of  the  way that Limbo  works;  without a limit, the
+# number of bullets might increase indefinitely.
+
+# The B.E. text-string engine seems to limit  strings  to a few lines'
+# worth of text. The program's main message-display routine (presently
+# named "show_msg") has been modified  to  work around the limitation.
+# The new version breaks messages up into lines and displays the lines
+# separately.
+
+#---------------------------------------------------------------------
+# Changes in revision 100923
+
+# Random game maps are now supported
+# Maps are no longer limited to a single size
+# Added optional medical kits
+# Medical kits are alive; the player needs to catch them
+# Added optional teleportation portals
+# Sprite creation frequency is now configurable
+# Maximum number of sprites may now be capped
+# Added chroma-key setup code
+# Sprite colors are now configurable
+# Sprites now move in 8 directions as opposed to 4
+# Reformatted sprite creation code to make layout visible
+# Reformatted default game map     to make layout visible
+# Documented "hex" approach to raw-sound operations
+
+#---------------------------------------------------------------------
+# Changes in revision 100922
+
+# (a) As of this  revision, if Brick 5.2 is  used,  the  "wrap_sprite_
+# position" patch discussed elsewhere is required.  The  patch is  not
+# needed for newer releases of Brick.
+
+# (b) "Hunter" enemies have been implemented.
+
+# (c) The default enemy speed is now configurable. Additionally,  dif-
+# ferent enemies may have different speeds.
+
+#---------------------------------------------------------------------
+# Changes in revision 100921
+
+# Optional background music is now supported
+# Now supports systems without OpenGL
+# Statistics are now displayed in a rectangular box
+
+#---------------------------------------------------------------------
+# Changes in revision 100920a
+
+# Added a program parameters section
+# Added a sound effect for enemies popping (when they're shot)
+# Added a sound effect for getting hit by enemies
+# Can now quit from the opening screen
+# "Q" key now quits (as well as Escape key)
+# Opening message is now displayed in a rectangular box
+# Revised some of the program comments
+
+#---------------------------------------------------------------------
+# Changes in revision 100920
+
+# Ported program to Brick Engine 5.2 API

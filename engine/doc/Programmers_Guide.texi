@@ -1,0 +1,1697 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename Brick-Engine-Manual.texi
+@settitle The Brick Engine Programmer's Guide
+@paragraphindent 0
+@c %**end of header
+
+
+@copying
+
+Permission is granted to distribute freely, or in a distribution of
+any kind.  All distributions of this file must be in an unaltered
+state, except for corrections.
+
+@sp 2
+
+Questions?  Comments?  Please email me at @email{steve@@rs.tc}.
+
+@sp 2
+
+Copyright @copyright{} 2005, 2006, 2007, 2008, 2009, 2010, 2011
+Stephen Havelka
+@end copying
+
+
+
+@titlepage
+@title The Brick Engine Programmer's Guide
+@subtitle v5.4
+
+@c The following two commands start the copyright page.
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@c Output the table of contents at the beginning.
+@contents
+
+
+@ifnottex
+@node Top
+@top The Brick Engine Programmer's Guide
+
+This is the Brick Engine Programmer's Guide.
+@end ifnottex
+
+
+@chapter An overview of the Brick Engine
+
+There are five main systems within the Brick Engine that you’ll rely
+on thoroughly in building your game.  I’ve described each of these
+five systems in general here.  I’d also recommend reading through the
+tutorials to gain a clearer picture on how these different parts work.
+
+@section The graphics display
+
+The Brick Engine provides true-color display, capable of running in
+windowed or full-screen mode. The programmer chooses the display
+resolution at run-time (up to a compile-time limit), and the display
+output can be scaled up when using the accelerated output mode.
+
+Graphics output consists of an optional background-fill color,
+tile-based maps, sprites, and strings. The maps, sprites, and strings
+are organized into layers.
+
+@subsection Layers
+
+Each layer can contain one tile-based map and an unlimited number of
+sprites and strings. The layers are drawn in the order they were
+created, and can be reordered at any time. Each layer also has a
+camera position assigned to it. The camera determines which sprites
+and which part of the map are displayed. Strings are absolutely
+positioned and do not move when the camera is moved, so that status
+information such as score or health do not need to be repositioned as
+the camera moves.
+
+@subsection Maps
+
+Each layer can have one tile-based map. A map consists of an array of
+tiles and a block of map data. Each element in the map data consists
+of an index into the tile array, representing the tile to draw at that
+position in the map.
+
+@subsection Tiles
+
+Tiles are the building blocks of the map display and consist of one or
+more frames of graphical data. Tiles also have an animation mode, if
+multiple frames are loaded, and a collision mask. The collision mask
+allows a sprite to react differently to different types of tiles, such
+that some may permit the sprite to pass while others will block the
+sprite motion.
+
+@subsection Sprites
+
+Sprites are movable pieces of graphics data that usually represent an
+actor in the game. A sprite can be either an image, drawn onto the
+display, or a filter, which alters the underlying image data. Sprites
+can have multiple frames, though only one is drawn at any given
+time. Sprites also have numerous properties to control their in-game
+action.
+
+@subsection Strings
+
+Strings are useful for status information, on-screen messages, and the
+like. The Brick Engine has one simple font built in, and by default
+text strings will be drawn using this font. New fonts may be loaded at
+any time. A few ascii control characters are respected when used in
+strings, such as tab stop, new line, and carriage return.
+
+
+@section Playing music and sounds
+
+The Brick Engine provides routines for playing songs and sounds. Both
+songs and sounds must be loaded into the Brick Engine before they can
+be played.
+
+@subsection Songs
+
+Songs can be started and stopped, and the song volume can be adjusted
+independent of the sounds. Songs can be loaded either from disk, or
+from a memory buffer. The file formats supported are all of those
+supported by SDL_mixer.
+
+@subsection Sounds
+
+Sounds can be started and stopped, and sound volume and panning can be
+adjusted at any time. Sounds can be loaded in three ways: from a file
+on disk or in a memory buffer in one of the file formats supported by
+SDL_mixer, or from a buffer containing raw sound data that matches the
+compile-time sound format settings.
+
+@section Reading input devices
+
+The Brick Engine input handler provides the programmer with access to
+the keyboard, joystick, and mouse. Because not everyone has a
+joystick, and not everyone has a keyboard, the Brick Engine unifies
+both the keyboard and the joystick into a single input method. This
+input method consists of a set of eight “virtual inputs”. Each virtual
+input has support for a certain number of axes, hats, and buttons. You
+can think of these virtual inputs just like regular joysticks, and the
+Brick Engine automatically maps any joysticks that are plugged in onto
+these virtual inputs.
+
+Each virtual input consist of axes, hats, and buttons:
+
+@itemize @bullet
+@item Axes have a range from -127 to 127 and represent the analog axes on a joystick.
+@item Hats have a range from -1 to 1 and represent the four-direction hats present on some joysticks.
+@item Buttons are boolean values representing the various buttons on a joystick or gamepad.
+@end itemize
+
+In addition to the axes, hats, and buttons, there are several special
+keyboard keys that will also be read whenever any input is read.
+
+@subsection Joysticks and the keyboard
+
+If any joysticks are plugged into the computer, the Brick Engine will
+map them onto the virtual joysticks starting at number 0.
+
+All keyboard input is mapped onto one of the eight virtual
+joysticks. Keypresses can be mapped onto the specific axes, hats, and
+buttons on any of these. A single keypress can also be mapped onto the
+inputs of more than one virtual joystick simultaneously.
+
+By default, the following keys are mapped onto virtual joystick 0:
+
+@itemize @bullet
+@item Arrow keys correspond to axes 0 and 1
+@item The WASD keys correspond to hat 0
+@item Left ctrl, left alt, z, and x correspond to buttons 0-3
+@end itemize
+
+This default mapping can of course be changed at any time.
+
+@subsection The mouse
+
+When the mouse input is read, the Brick Engine will report the X and Y
+motion of the mouse relative to its last known position. It will also
+report the current status of up to eight mouse buttons.
+
+@subsection Special keys
+
+The special keys that will always be read and returned as a part of
+the input are:
+
+@itemize @bullet
+@item Tab
+@item Space bar
+@item Enter/return
+@item Pause
+@item Escape
+@end itemize
+
+
+
+@chapter C API Reference
+
+Welcome to the quick reference guide for the Brick Engine, v5.3.  This
+document covers the C API.
+
+@page
+
+@section Basic Engine Operation
+
+
+@page
+
+@subsection Starting and stopping the Brick Engine
+
+Just about everything you'll do with the Brick Engine requires that
+you initialize it first.  After you're done, too, you may want to free
+up any resources held by the engine.
+
+@page
+
+@subsubsection @code{init_brick}
+
+@code{void init_brick();}
+
+Prepares the engine internal data structures and activates the hardware.
+
+@page
+
+@subsubsection @code{quit_brick}
+
+@code{void quit_brick();}
+
+Shuts down the engine, closes the graphics and sound output, and
+releases memory used by the engine.
+
+@page
+
+@subsection Graphics
+
+The graphics display may be started and stopped at any time (e.g. to change from windowed to full-screen mode, or to change the display resolution), without interfering with the rest of the engine.  These are the routines to activate and deactivate the graphics display.
+
+@page
+
+@subsubsection @code{graphics_open}
+
+@code{int graphics_open(int mode, int w, int h, int fs, int zf);}
+
+Opens the graphics display.  The @var{mode} value is one of the following:  @option{GRAPHICS_SDL} (standard SDL display) or @option{GRAPHICS_ACCEL} (OpenGL-accelerated blit to screen).  The graphics display size is given in @var{w} and @var{h}.  @emph{There is a compile-time maximum width and height, defaulting to 640x480.}
+
+Full-screen mode is controlled by the boolean @var{fs} flag.  In the accelerated graphics output mode, the zoom factor @var{zf} determines the amount by which the display is scaled.  @emph{Note that a zoom factor of either 0 or 1 has no effect on the output display.}
+
+Returns 0 on success, or an error code on failure.
+
+@page
+
+@subsubsection @code{graphics_close}
+
+@code{void graphics_close();}
+
+Closes the active graphics display.
+
+@page
+
+@subsubsection @code{graphics_info}
+
+@code{int graphics_info(int *w, int *h);}
+
+Returns the active graphics mode, and stores the current display resolution in @var{w} and @var{h}.
+
+@page
+
+@subsection Audio
+
+Audio output may be activated or deactivated at any time.  These routines let you do that.
+
+@page
+
+@subsubsection @code{audio_open}
+
+@code{int audio_open(int mode, char *file);}
+
+Opens the audio output.  @var{mode} is one of the following:  @option{AUDIO_SPEAKER} (speaker output).
+
+@page
+
+@subsubsection @code{audio_close}
+
+@code{void audio_close();}
+
+Closes the active audio output.
+
+@page
+
+@subsection Input
+
+These are functions used to configure and read user input from keyboard, joystick, and mouse.  The joystick is the primary type of input device recognized by the Brick Engine, and the engine supports up to eight joysticks at a time.  You don't, of course, need any actual joysticks to play, because the engine will map all keyboard input onto one of eight "virtual joysticks":  each keypress is turned into an axis, hat, or button motion on one of the eight joysticks, and this keyboard-input mapping can be altered at any time.  If you've got actual hardware joysticks plugged in, the inputs provided by these joysticks (axes, hats, and buttons) can be read directly.
+
+@page
+
+@subsubsection @code{io_fetch}
+
+@code{int io_fetch(int input, input *io);}
+
+Retrieves the status of the given input into @var{io}.
+
+There are eight inputs from which movement and actions can be requested, numbered 0 through 7.  Keys can be assigned to any action (axis, hat, or button) on any input.  If joysticks are plugged in, they are assigned to the inputs starting at @var{0}.
+
+Axes have a range from -127 to 127.  Key presses will set the axis to the ends of this range, while an analog joystick input may return any value within this range.  Up to eight axes are read, either from joystick or from the assigned keys.
+
+Usually, the first two axes will represent horizontal and vertical motion, either from the keyboard or the joystick.  Joysticks with more than one analog stick will use additional axes to represent the movement on the additional sticks.  By default, the arrow keys are mapped onto axes 0 and 1 on input 0.
+
+Hats represent the four-way directional inputs present on some joysticks.  Hat values range from -1 to 1 and are returned as pairs of horizontal and vertical results.  Note that a joypad-style controller with just one directional input probably returns its results as a pair of axes rather than a hat.  By default, the keys @var{wasd} are mapped onto hat 0 of input 0.
+
+Button presses return either 0 or 1.  By default, the keys @emph{left ctrl}, @emph{left alt}, @emph{z}, and @emph{x} are assigned to button presses 0 through 3 on input 0.
+
+There are eight axes, four hats, and twenty buttons available on each input.  If a physical joystick has more axes, hats, or buttons than this, the excess will be ignored.
+
+The keys @emph{space}, @emph{tab}, @emph{enter}/@emph{return} (as @emph{select}), @emph{pause}, and @emph{escape} are always included in the results.
+
+@page
+
+@subsubsection @code{io_mouse}
+
+@code{int io_mouse(int input, mouse *);}
+
+Reads the mouse motions on the specified mouse input.
+
+@page
+
+@subsubsection @code{io_grab}
+
+@code{void io_grab(int flag);}
+
+Grabs the keyboard and mouse input, preventing interference from the window manager or operating system.  @emph{Be cautious that your game is thoroughly debugged before using this routine!!  If your game has an infinite loop and the input grab is enabled, there will be no way for the player to exit gracefully.}
+
+@page
+
+@subsubsection @code{io_has_quit}
+
+@code{int io_has_quit();}
+
+Returns whether or not a quit signal has been received by the game, e.g. clicking the close button of the game window.
+
+@page
+
+@subsubsection @code{io_wait}
+
+@code{int io_wait(int delay);}
+
+Waits until all input buffers are cleared, and then waits until any activity on any of the inputs is received.  If the application-quit button is pressed, this immediately returns ERR.  The @var{delay} value indicates how many times each second the inputs will be checked for activity, so that the processor use can be kept low.
+
+@page
+
+@subsubsection @code{io_assign}
+
+@code{void io_assign(int input, int type, ... );}
+
+@code{void io_assign(int input, int type = IO_AXIS, int axis_no, int dir, int keycode);}
+
+@code{void io_assign(int input, int type = IO_HAT, int hat_no, int dir, int keycode);}
+
+@code{void io_assign(int input, int type = IO_BUTTON, int button_no, int keycode);}
+
+Assigns a keycode to the action on the given input.  The combination of axis, hat, button number, and direction specifies which joystick action will have a keyboard-mapping assigned.  The type must be one of @option{IO_AXIS}, @option{IO_HAT}, @option{IO_BUTTON}.  If the action type is @option{IO_AXIS}, then only the directions @option{IO_LEFT} and @option{IO_RIGHT} are permitted.  If the action type is @option{IO_HAT}, then the directions @option{IO_LEFT}, @option{IO_UP}, @option{IO_DOWN}, and @option{IO_RIGHT} are permitted.  Note that if the action type is @option{IO_BUTTON}, then the direction argument is omitted.
+
+@page
+
+@subsubsection @code{io_read_key}
+
+@code{int io_read_key()}
+
+Halts until a single keypress can be read, and a keycode returned.  @emph{This is not useful for general-purpose input, but is intended only to let the programmer determine keycodes interactively, for use with @code{io_assign()}.}
+
+@page
+
+@section The Graphics Subsystem
+
+There are two parts of the Brick Engine graphics subsystem that deal with system-wide graphics configuration:  render settings and font handling.  Everything else (i.e. the sprites, strings, and tile-based maps) is addressed later on.
+
+@page
+
+@subsection Rendering
+
+These are the routines used to set system-wide rendering options.
+
+@page
+
+@subsubsection @code{render_set_bg_fill}
+
+@code{void render_set_bg_fill(int fill);}
+
+Enable or disable the solid-color background fill.
+
+@page
+
+@subsubsection @code{render_set_bg_color}
+
+@code{void render_set_bg_color(char r, char g, char b);}
+
+Sets the background fill color to the given RGB values.
+
+@page
+
+@subsubsection @code{render_set_overdraw}
+
+@code{void render_set_overdraw(int w, int h);}
+
+Sets the amount of overdraw applied to the internal render canvas.  This does not affect the displayed canvas size.  Some sprite frame types (e.g. the pixel-repositioning frame) may depend on graphics data being drawn outside the screen borders for proper composition of the display, and the overdraw instructs the renderer to generate this extra data.
+
+@page
+
+@subsubsection @code{render_display}
+
+@code{void render_display();}
+
+Renders and displays the current frame.
+
+@page
+
+@subsubsection @code{render_to_disk}
+
+@code{int render_to_disk(char *file);}
+
+Renders the current frame to the so-named file.
+
+@page
+
+@subsection Fonts
+
+The Brick Engine has a very simple and lightweight font renderer built in.  Fonts are loaded into the engine as bitmaps, and characters are fixed-width.  One font, named @var{default}, is built into the Brick Engine, and additional fonts can be loaded at any time.
+
+@page
+
+@subsubsection @code{font_add}
+
+@code{void font_add(char *name, int w, int h, unsigned char *data, color *key);}
+
+Adds a new font named @var{name}, with the bitmap data stored in @var{data}.  If @var{key} is not null, it will be used as a chroma key for the font display.  The @var{data} buffer is three-bytes-per-pixel RGB data, consisting of an image of all characters in the font arranged in order.  The dimensions of each character are given in @var{w} and @var{h}, and the font image must be 128 characters wide.
+
+@page
+
+@subsubsection @code{font_info}
+
+@code{int font_info(char *name, int *w, int *h);}
+
+Retrieves the character dimensions of the named font.  Returns 0 on success, or ERR if the font does not exist.
+
+@page
+
+@subsubsection @code{font_from_disk}
+
+@code{void font_from_disk(char *name, char *file, color *key);}
+
+Adds a new font named @var{name} from the compressed image file named @var{file}.  If @var{key} is not null, it will be used as a chroma key for the font display.  The font image is assumed to be 128 characters wide.  @emph{This routine is only available if the Brick Engine has been built with SDL_image support.}
+
+@page
+
+@subsubsection @code{font_from_buffer}
+
+@code{void font_from_buffer(char *name, int len, unsigned char *data, color *key);}
+
+Adds a new font named @var{name} from the @var{data} buffer which contain a compressed image file.  If @var{key} is not null, it will be used as a chroma key for the font display.  The font image is assumed to be 128 characters wide.  @emph{This routine is only available if the Brick Engine has been built with SDL_image support.}
+
+@page
+
+@section The Audio Subsystem
+
+Every game needs sound!  The Brick Engine provides functionality to handle both song and sound playback with ease.
+
+@page
+
+@subsection Sound playback
+
+These routines let you load sounds from different sources (from a known sound file format stored on disk or in a memory buffer, or as raw sound data), play them as needed, and stop them or adjust the sound volume/panning in mid-play.
+
+@page
+
+@subsubsection @code{sound_load_from_disk}
+
+@code{sound *sound_load_from_disk(char *filename);}
+
+Loads a sound from a file on disk.  The list of supported file formats can be found in the documentation for @uref{http://www.libsdl.org/projects/SDL_mixer/, SDL_mixer}.
+
+@page
+
+@subsubsection @code{sound_load_from_buffer}
+
+@code{sound *sound_load_from_buffer(int length, unsigned char *data);}
+
+Loads a sound from the @var{data} buffer.  The buffer length is given in @var{length}.  The list of supported file formats can be found in the documentation for @uref{http://www.libsdl.org/projects/SDL_mixer/, SDL_mixer}.
+
+@page
+
+@subsubsection @code{sound_load_raw}
+
+@code{sound *sound_load_raw(int length, unsigned char *data);}
+
+Creates a sound from the given data buffer.  The data must match the audio format set at compile time.  By default, the audio format is 8-bit unsigned data.
+
+@page
+
+@subsubsection @code{sound_play}
+
+@code{int sound_play(sound *sound, int volume);}
+
+Plays the given sound.  The volume may range from 0 to 128.  This returns the ID of the audio channel that is playing the sound, so that the sound can be stopped or have its volume or panning values adjusted.
+
+@page
+
+@subsubsection @code{sound_halt}
+
+@code{void sound_halt(int id);}
+
+Stops the sound playing on the given channel.  If @var{id} is -1, halt all sounds.
+
+@page
+
+@subsubsection @code{sound_adjust_vol}
+
+@code{void sound_adjust_vol(int id, int volume);}
+
+Sets the volume of the sound playing on the given channel ID.  The volume may range from 0 to 128.  If @var{id} is -1, sets the volume for all currently-playing sounds.
+
+@page
+
+@subsubsection @code{sound_adjust_an}
+
+@code{void sound_adjust_an(int id, int panning);}
+
+Sets the panning of the sound playing on the given channel ID.  The panning value ranges from 0 (left speaker only) to 254 (right speaker only), and is balanced at 127.  If @var{id} is -1, sets the panning for all currently-playing sounds.
+
+@page
+
+@subsection Song playback
+
+The song playback routines will let you start, stop, and otherwise control the background music for your game.  The Brick Engine relies on @uref{http://www.libsdl.org/projects/SDL_mixer/, SDL_mixer} for its music playback support, so the list of supported file formats depends on how SDL_Mixer has built for your system.
+
+@page
+
+@subsubsection @code{song_play_from_disk}
+
+@code{void song_play_from_disk(char *filename, int delay);}
+
+Loads and plays the named song from disk, with a fade-in duration given in milliseconds.
+
+@page
+
+@subsubsection @code{song_play_from_buffer}
+
+@code{void song_play_from_buffer(int length, unsigned char *buffer, int delay);}
+
+Loads and plays the named song from a memory buffer of length @var{length}, with a fade-in duration given in milliseconds.
+
+@page
+
+@subsubsection @code{song_pause}
+
+@code{void song_pause();}
+
+Pauses the currently-playing song.
+
+@page
+
+@subsubsection @code{song_resume}
+
+@code{void song_resume();}
+
+Resumes the currently-paused song.
+
+@page
+
+@subsubsection @code{song_stop}
+
+@code{void song_stop(int fade_out_delay);}
+
+Stops the currently-playing song with fade-out delay given in milliseconds.
+
+@page
+
+@subsubsection @code{song_set_position}
+
+@code{void song_set_position(int pos);}
+
+Sets the position of the currently-playing song.
+
+@page
+
+@subsubsection @code{song_adjust_vol}
+
+@code{void song_adjust_vol(int volume);}
+
+Sets the music playback volume.  The volume can range from 0 to 128.
+
+@page
+
+@section Items and Lists
+
+These are the bread-and-butter routines in the Brick Engine, the API calls you'll use again and again in developing your games, so it's worth it to familiarize yourself with these.
+
+@page
+
+@subsection Lists
+
+Lists are everywhere in computing, and the Brick Engine is no different.  The list implementation built into the engine is a pretty simple doubly-linked list, and you'll most often use it in two places:  adding sprites and strings to the sprite- and string- display lists, and getting back lists of sprites from the introspection routines.  (You may also find some more sophisticated uses for the Brick Engine lists, though, e.g. setting up some intricate collision-detection schemes where you'll test certain groups of enemy sprites against certain player projectiles.)  These routines are what you'll use to create and manipulate Brick Engine lists.
+
+@page
+
+@subsubsection @code{list_create}
+
+@code{list *list_create();}
+
+Creates a new list.
+
+@page
+
+@subsubsection @code{list_empty}
+
+@code{void list_empty(list *list);}
+
+Empties the given listen.  Note that this does not delete any of the items in the list.
+
+@page
+
+@subsubsection @code{list_delete}
+
+@code{void list_delete(list *list);}
+
+Deletes the given list.  Note that this does not delete any of the items in the list.
+
+@page
+
+@subsubsection @code{list_add}
+
+@code{void list_add(list *list, void *item);}
+
+Adds the given item to the end of the list.
+
+@page
+
+@subsubsection @code{list_prepend}
+
+@code{void list_prepend(list *list, void *item);}
+
+Adds the given item to the start of the list.
+
+@page
+
+@subsubsection @code{list_shift}
+
+@code{void *list_shift(list *list);}
+
+Removes the first item from the head of the list and returns it.
+
+@page
+
+@subsubsection @code{list_pop}
+
+@code{void *list_pop(list *list);}
+
+Removes the last item from the list and returns it.
+
+@page
+
+@subsubsection @code{list_remove}
+
+@code{void list_remove(list *list, void *item, int direction);}
+
+Removes the given item from the list.  The @var{direction} flag can be set to @option{LIST_HEAD}, @option{LIST_TAIL}, or @option{LIST_ALL}.  If set to @option{LIST_HEAD} or @option{LIST_TAIL}, this routine removes the first matching entry it finds from the beginning or end of the list.  If @option{LIST_ALL} is given, then all matching items are removed from the list.
+
+@page
+
+@subsubsection @code{list_length}
+
+@code{int list_length(list *list);}
+
+Returns a count of the number of items in the given list.
+
+@page
+
+@subsubsection @code{list_find}
+
+@code{int list_find(list *list, void *item);}
+
+Determines whether the given item is in the list.
+
+@page
+
+@subsubsection @code{list_sort}
+
+@code{void list_sort(list *list, int(*)(void *, void *));}
+
+Sorts the list using the provided comparison function.
+
+@page
+
+@subsubsection List Iterator Macros
+
+There are now several macros provided in the Brick Engine header file to provide basic list iteration capability.
+
+@code{iterator_start(iterator i, list l);}
+
+Initializes an iterator struct to point to the head of the given list.  You must call this before using any of the other iterator macros.
+
+@code{iterator_next(iterator i);}
+
+Advances the iterator one step forward.  If there are no more list entries, then this does nothing.
+
+@code{iterator_data(iterator i);}
+
+Retrieves the item held in the current list position.
+
+@code{iterator_ct(iterator i);}
+
+Gives the number of iterations through the list that have been made in this iteration.
+
+@page
+
+@subsection Frames
+
+A frame is a container for any sort of graphics data in the Brick Engine.  Whether you are working with simple pixel data, color keyed data (i.e. one color treated as transparent), or one of the various visual effects (e.g. convolution kernel, desaturation, and so on), the data is always stored in a frame.  Some of the sprite and tile routines, such as @code{sprite_add_frame_data()}, handle the process of creating and loading the frame for you, but others, such as @code{sprite_add_subframe()}, require that you create and prepare the frame before passing it to the routine.
+
+Frames can be sliced into subframes (good for cutting up sprite sheets), and it's also possible to convert RGB frames into almost any other frame type, e.g. to create a desaturated version of a sprite, for use in some effect.
+
+Last, if you've built the Brick Engine with the SDL_Image dependency, you can load and unpack a variety of image types directly into frames, either from disk or from a memory buffer.
+@node Creating frames
+
+@page
+
+@subsubsection @code{frame_create}
+
+@code{frame *frame_create(int mode, int width, int height, void *data, void *auxiliary);}
+
+Creates a new graphics frame using the given frame data.  @var{mode} is one of:  @option{FRAME_NONE} (no display data), @option{FRAME_RGB} (RGB data with an optional chroma-key), @option{FRAME_BR} (brightness-adjusting frame), @option{FRAME_CT} (contrast-adjusting frame), @option{FRAME_HL} (hard-light blending frame), @option{FRAME_SL} (soft-light blending frame), @option{FRAME_SAT} (saturation-adjusting frame), @option{FRAME_DISPL} (pixel-displacement frame), @option{FRAME_CONVO} (convolution kernel), @option{FRAME_LUT} (RGB lookup-table frame).  The width and height are given in @var{width} and @var{height}.
+
+
+@table @code
+
+@item FRAME_NONE
+Takes no display data and produces no output.  The @var{data} and @var{auxiliary} arguments are ignored.  This isn't very useful, except for situations where some unusual collision detection is needed.
+
+@item FRAME_RGB
+@var{data} points to a buffer of RGB pixels.  An optional chroma key can be passed in as a @var{color} in @var{auxiliary}.  The frame data is drawn as-is onto the render canvas.
+
+@item FRAME_BR
+@var{data} points to a buffer of RGB pixels.  A pixel component value of 64 is neutral and doesn't alter the image brightness.  Values less than 64 darken the image, and values greater than 64 brighten the image.
+
+@item FRAME_CT
+@var{data} points to a buffer of unsigned char values which adjust the contrast of the underlying image.  A pixel component value of 64 is neutral and leaves the image contrast unaltered. Values less than 64 decrease the image contrast to a neutral grey, and values greater than 64 increase the contrast of the image.
+
+@item FRAME_HL
+@var{data} points to a buffer of RGB pixels.  A pixel component value of 128 is neutral and doesn't alter image lightness.  Values less than 128 darken the image toward black, and values greater than 128 lighten the image toward white.
+
+@item FRAME_SL
+@var{data} points to a buffer of RGB pixels.  A pixel component value of 128 is neutral and doesn't alter image lightness.  Values less than 128 lighten the image toward neutral, and values greater than 128 darken the image toward neutral.
+
+@item FRAME_SAT
+@var{data} points to a buffer of unsigned char values which adjust the saturation of the underlying image.  A pixel value of 128 leaves the image unchanged.  A value of 64 desaturates the image, and values between 64 and 128 give varying degrees of desaturation.  Values less than 64 invert the hue of the image data.  Values greater than 128 increase the saturation.
+
+@item FRAME_DISPL
+@var{data} points to an array of 16-bit (big-endian) X/Y coordinate pairs.  Each coordinate pair represents an offset from the pixel in the frame to the location in the underlying image data from which to retrieve the given pixel.  For example, pixel data consisting of only zeros has no effect, while pixel data containing all pairs of -1, -1 will create a frame that offsets the underlying image data up and to the left by one pixel.
+
+@item FRAME_CONVO
+@var{data} points to a pixel mask, in which each non-zero pixel applies the specified convolution kernel to the underlying image data.  The convolution kernel definition is passed into @var{auxiliary} as a @var{convolution}.
+
+@item FRAME_LUT
+@var{data} points to a buffer of unsigned chars which act as a pixel mask.  Each non-zero pixel causes the underlying image data to be replaced according to that pixel's value in the lookup table.  The lookup table is passed into @var{auxiliary} is a data buffer 768 bytes long, divided into three sets of 256 bytes.  Each set of 256 bytes is a lookup table (red first, then green, then blue), where the pixel component in the source image is used as the index into the lookup table for the resulting pixel value.
+
+@end table
+
+@page
+
+@subsubsection @code{frame_info}
+
+@code{int frame_info(frame *frame, int *w, int *h, int *mode);}
+
+Retrieves the frame dimensions and type.  Returns 0 on success, or ERR if the frame does not exist.
+
+@page
+
+@subsubsection @code{frame_copy}
+
+@code{frame *frame_copy(frame *frame);}
+
+Makes a copy of the given frame.
+
+@page
+
+@subsubsection @code{frame_delete}
+
+@code{void frame_delete(frame *frame);}
+
+Deletes the given frame.
+
+@page
+
+@subsubsection @code{frame_set_mask}
+
+@code{void frame_set_mask(frame *frame, unsigned char *data);}
+
+Sets the pixel mask for the given frame.  This can be useful if you plan to use one frame both as a tile and as a sprite.
+
+@page
+
+@subsubsection @code{frame_set_mask_from}
+
+@code{void frame_set_mask_from(frame *frame, frame *source);}
+
+Sets the pixel mask for the given frame one of two ways, depending on the source frame.  If the source frame has a color key set, then the pixel mask is generated by non-transparent pixels.  If the source frame has no transparency set, then each pixel is desaturated and any pixels darker than middle gray are treated as solid.  This routine only accepts RGB-type frames.
+
+@page
+
+@subsubsection @code{frame_slice}
+
+@code{frame *frame_slice(frame *frame, int x, int y, int width, int height);}
+
+Copies out a section out of the given RGB frame and returns it as a new frame.
+
+@page
+
+@subsubsection @code{frame_convert}
+
+@code{frame *frame_convert(frame *frame, int mode, void *auxiliary);}
+
+Converts an RGB frame to almost any other frame type.  This routine modifies the frame in-place, so you should make a copy if you plan to use the original again.
+
+@page
+
+@subsubsection @code{frame_from_disk}
+
+@code{frame *frame_from_disk(char *file, color *key);}
+
+Loads and decompresses the given image file into an RGB frame.  This routine is only available if the Brick Engine has been built with @uref{http://www.libsdl.org/projects/SDL_image/, SDL_image} support.
+
+@page
+
+@subsubsection @code{frame_from_buffer}
+
+@code{frame *frame_from_buffer(int len, unsigned char *data, color *);}
+
+Loads and decompresses an RGB frame from an image file stored in the given data buffer.  This routine is only available if the Brick Engine has been built with @uref{http://www.libsdl.org/projects/SDL_image/, SDL_image} support.
+
+@page
+
+@subsection Layers
+
+Layers are the basic building block of graphics programming with the Brick Engine.  A layer consists of a sprite list, a tile-based map, and a string list.  Any of these items can be omitted, and if all three are omitted, the layer is ignored.  Each layer also has a camera position, which determines what part of the layer (i.e. the layer's sprites and map..more on strings in a minute) is visible.  Strings are a little different, in that they're always rendered exactly where they're placed, and do not move when the layer camera is moved.  The layers are rendered in order of creation, and they can be swapped with one another.
+
+Each layer can also have a viewport set, which determines the region of the screen where the layer will actually be drawn.  (This allows for easy split-screen gaming, e.g. create a layer, set its viewport to the left half of the screen, then copy it into a new layer and set that layer's viewport to the right side of the screen.  Each layer's camera can then be focused on different players.)
+
+Layers have two attributes which are worth mentioning:  visibility and sorting.  Layer visibility doesn't really need further explanation.  The visibility attribute can be set at any time.  Sorting, however, is more complicated.  Some games may require that sprites are rendered in a certain order, e.g. a sprite that passes in front of another and then behind it, and sorting is a way to achieve that.  When layer sorting is enabled, all sprites in that layer are sorted by their z-hint attribute before rendering, and are then rendered in order.
+
+@page
+
+@subsubsection @code{layer_count}
+
+@code{int layer_count();}
+
+Returns the current number of layers.
+
+@page
+
+@subsubsection @code{layer_add}
+
+@code{int layer_add();}
+
+Adds a new layer and returns its ID.  When a layer is added, a sprite list, map, and string list are automatically created.
+
+@page
+
+@subsubsection @code{layer_reorder}
+
+@code{void layer_reorder(int first, int second);}
+
+Swaps the first layer with the second.
+
+@page
+
+@subsubsection @code{layer_remove}
+
+@code{void layer_remove(int id);}
+
+Removes the specified layer
+
+@page
+
+@subsubsection @code{layer_copy}
+
+@code{int layer_copy(int id);}
+
+Makes a copy of the specified layer, assigning its properties (sprite list, map, etc) to the new layer.
+
+@page
+
+@subsubsection @code{layer_get_sprite_list}
+
+@code{list *layer_get_sprite_list(int id);}
+
+Returns the sprite list for the given layer.
+
+@page
+
+@subsubsection @code{layer_get_map}
+
+@code{map *layer_get_map(int id);}
+
+Returns the map for the given layer.
+
+@page
+
+@subsubsection @code{layer_get_string_list}
+
+@code{list *layer_get_string_list(int id);}
+
+Returns the string list for the given layer.
+
+@page
+
+@subsubsection @code{layer_get_visible}
+
+@code{int layer_get_visible(int id);}
+
+Returns a boolean value for the layer visibility setting.
+
+@page
+
+@subsubsection @code{layer_get_sorting}
+
+@code{int layer_get_sorting(int id);}
+
+Returns a boolean value for sprite z-hint sorting on the given layer.
+
+@page
+
+@subsubsection @code{layer_set_sprite_list}
+
+@code{void layer_set_sprite_list(int id, list *list);}
+
+Sets the sprite list for the given layer.
+
+@page
+
+@subsubsection @code{layer_set_map}
+
+@code{void layer_set_map(int id, map *map);}
+
+Sets the map for the given layer.
+
+@page
+
+@subsubsection @code{layer_set_string_list}
+
+@code{void layer_set_string_list(int id, list *list);}
+
+Sets the string list for the given layer.
+
+@page
+
+@subsubsection @code{layer_set_visible}
+
+@code{void layer_set_visible(int id, int mode);}
+
+Sets the layer visibility setting to the boolean value specified in @var{mode}.
+
+@page
+
+@subsubsection @code{layer_set_sorting}
+
+@code{void layer_set_sorting(int id, int mode);}
+
+Sets the sprite z-hint sorting value setting on the given layer.
+
+@page
+
+@subsubsection @code{layer_get_camera}
+
+@code{int layer_get_camera(int id, int *x, int *y);}
+
+Retrieves the camera position on the specified layer.  Returns 0 on success, or ERR if the layer ID is invalid.
+
+@page
+
+@subsubsection @code{layer_set_camera}
+
+@code{void layer_set_camera(int id, int x, int y);}
+
+Sets the camera position on the specified layer.
+
+@page
+
+@subsubsection @code{layer_adjust_camera}
+
+@code{void layer_adjust_camera(int id, int x, int y);}
+
+Adjusts the camera position on the specified layer.
+
+@page
+
+@subsubsection @code{layer_get_view}
+
+@code{int layer_get_view(int id, box *);}
+
+Retreives the viewport on the specified layer.  Returns 0 on success, or ERR if the layer ID is invalid.
+
+@page
+
+@subsubsection @code{layer_set_view}
+
+@code{void layer_set_view(int id, box *);}
+
+Sets the viewport on the specified layer.
+
+@page
+
+@subsection Maps
+
+The tile-based map is an important part of much of 2D game programming, and the Brick Engine has some useful map functionality built in.  Every display layer gets one map, and it's always optional whether or not to use the map for any given layer.
+
+A map consists of two things:  a set of tiles, and an array of map data.  So, to get started with the tile-based maps, you'll first create one or more tiles using the tile-handling commands.  You'll then add them to the map's tile index, a fixed-length array of tiles (there's a compile-time limit that determines the size of this array, by default limited to 4096 tiles), and set the tile size as well as the overall map dimensions.  Last, you'll set the map data, either one element at a time or all at once.  Each entry in the map data array is a number that corresponds to the tile index containing the tile you want to appear at that position on the map.
+
+So, if you have a map that with a width of 3 and a height of 2, the map data array will consist of six numbers.  The first three numbers indicate which tiles will show on the first row of the map, and the second three numbers indicate which tiles show on the second row of the map.
+
+If your map data has tile indices that haven't had any tiles set, then nothing will be rendered (e.g. a hole will appear, and whatever was underneath will be visible) at that point of the map.
+
+@page
+
+@subsubsection @code{map_create}
+
+@code{map *map_create();}
+
+Creates a new map.
+
+@page
+
+@subsubsection @code{map_empty}
+
+@code{void map_empty(map *map);}
+
+Empties a map and resets all map attributes, but does not delete the map itself.
+
+@page
+
+@subsubsection @code{map_delete}
+
+@code{void map_delete(map *map);}
+
+Deletes a map.
+
+@page
+
+@subsubsection @code{map_get_size}
+
+@code{int map_get_size(map *map, int *w, int *h);}
+
+Stores the size of the map into @var{w} and @var{h}.  Returns 0 on success, or ERR if the map does not exist.
+
+@page
+
+@subsubsection @code{map_get_tile_size}
+
+@code{int map_get_tile_size(map *map, int *tw, int *th);}
+
+Stores the map's tile size into @var{tw} and @var{th}.  Returns 0 on success, or ERR if the map does not exist.
+
+@page
+
+@subsubsection @code{map_get_tile}
+
+@code{int map_get_tile(map *map, int index, tile **tile);}
+
+Stores the tile pointer for the given map index into @var{tile}.  Returns 0 on success, or ERR if the map does not exist.
+
+@page
+
+@subsubsection @code{map_set_size}
+
+@code{void map_set_size(map *map, int w, int h);}
+
+Sets the overall dimensions for the given map.
+
+@page
+
+@subsubsection @code{map_set_tile_size}
+
+@code{void map_set_tile_size(map *map, int tw, int th);}
+
+Sets the tile size for the given map.
+
+@page
+
+@subsubsection @code{map_set_tile}
+
+@code{void map_set_tile(map *map, int index, tile *tile);}
+
+Loads the given tile into the map's tile index.
+
+@page
+
+@subsubsection @code{map_set_data}
+
+@code{void map_set_data(map *map, short *data);}
+
+Sets the map data for the given map.  @var{w} and @var{h} are the dimensions of the map.  The map data is an array of 16-bit words, each word containing the index of the tile to display.
+
+@page
+
+@subsubsection @code{map_set_single}
+
+@code{void map_set_single(map *map, int x, int y, short data);}
+
+Sets a single element in the map data.  @var{x} and @var{y} are the tile coordinates to be set.  The tile is a 16-bit word containing the index of the tile.
+
+@page
+
+@subsubsection @code{map_animate_tiles}
+
+@code{void map_animate_tiles(map *map);}
+
+Animate all tiles on the given map.
+
+@page
+
+@subsubsection @code{map_reset_tiles}
+
+@code{void map_reset_tiles(map *map);}
+
+Reset all tile animation on the given map.
+
+@page
+
+@subsection Tiles
+
+These routines allow you to create the tiles (and set the properties of same) that you can then load into your maps.
+
+@page
+
+@subsubsection @code{tile_create}
+
+@code{tile *tile_create();}
+
+Creates a new tile.
+
+@page
+
+@subsubsection @code{tile_delete}
+
+@code{void tile_delete(tile *tile);}
+
+Deletes a tile and frees all of its image data.
+
+@page
+
+@subsubsection @code{tile_get_collides}
+
+@code{int tile_get_collides(tile *tile, int *mode);}
+
+Retrieves the collision mode for the specified tile.  Returns 0 on success, or ERR if the tile does not exist.
+
+@page
+
+@subsubsection @code{tile_set_collides}
+
+@code{void tile_set_collides(tile *tile, int mode);}
+
+Sets the collision mode for the specified tile.  The @var{mode} must be one of:  @option{COLLISION_OFF} (sprite does not collide), @option{COLLISION_BOX} (collision testing by bounding box), or @option{COLLISION_PIXEL} (collision testing by pixel-mask).
+
+@page
+
+@subsubsection @code{tile_get_anim_type}
+
+@code{int tile_get_anim_type(tile *tile, int *type);}
+
+Retrieves the animation type for the specified tile.  Returns 0 on success, or ERR if the tile does not exist.
+
+@page
+
+@subsubsection @code{tile_set_anim_type}
+
+@code{void tile_set_anim_type(tile *tile, int type);}
+
+Sets the animation type for the specified tile.  Valid animation types are:  @option{ANIMATE_OFF} (do not animate), @option{ANIMATE_FWD} (forward looping animation), @option{ANIMATE_REV} (reverse looping animation), and @option{ANIMATE_PP} (ping-pong animation).
+
+@page
+
+@subsubsection @code{tile_add_frame}
+
+@code{int tile_add_frame(tile *tile, frame *frame);}
+
+Adds the given frame to the tile.  Please note that this does not make a copy of the frame, so you will likely want to make a copy of the frame before passing it to this routine (e.g. if you use that particular frame anywhere else).
+
+@page
+
+@subsubsection @code{tile_add_frame_data}
+
+@code{int tile_add_frame_data(tile *tile, int mode, int width, int heigt, void *data, void *aux);}
+
+Loads the given graphics data into the tile.  The documentation for @code{frame_create()} has a detailed description of the arguments, as this is essentially a wrapper for that routine.
+
+@page
+
+@subsubsection @code{tile_set_pixel_mask}
+
+@code{void tile_set_pixel_mask(tile *tile, int index, unsigned char *data);}
+
+Sets a pixel-accurate collision mask for the specified frame of the tile.  Any non-zero value in the @var{data} buffer counts as an active pixel.
+
+@page
+
+@subsubsection @code{tile_set_pixel_mask_from}
+
+@code{void tile_set_pixel_mask_from(tile *tile, int index, frame *source);}
+
+Sets a pixel-accurate collision mask for the specified frame of the tile from a source frame.  If the source frame has a color key set, then the opaque pixels represent the collidable portions of the pixel mask.  If the source frame does not have a color key, then each pixel is desaturated and any pixel lighter than neutral gray (r, g, b = 128) counts as an active pixel.
+
+@page
+
+@subsubsection @code{tile_animate}
+
+@code{void tile_animate(tile *tile);}
+
+Animates the specified tile.
+
+@page
+
+@subsubsection @code{tile_reset}
+
+@code{void tile_reset(tile *tile);}
+
+Resets the tile animation for the specified tile.
+
+@page
+
+@subsection Sprites
+
+Sprites are movable graphical elements that comprise the basic building blocks of most games you'll make with the Brick Engine.  They're similar to the idea of hardware sprites that you'll find in consoles and old computers, but with some very useful improvements.
+
+Each sprite can have an unlimited number of graphics frames added to it for animation, and each frame can have subframes that are rendered in series to aid in composition of sprites and effects.  The effects are the other unique thing about Brick Engine sprites.  A given sprite frame (or subframe) isn't just a block of RGB data, but can be one of a variety of color-manipulation effects, such as brightness or saturation/desaturation effects, or pixel-manipulation effects, such as user-defined convolution kernels.  These effects allow for a wide variety of engaging visuals, like shadows, real-time reflective mirrors, rippling water effects, heat-blurring of rocket jets, and so on.
+
+Sprites can also have two kinds of collision-detection enabled, bounding box collision detection (very fast) and pixel-accurate collision detection (not as fast, but as accurate as you specify).
+
+Brick Engine sprites offer two more seldom-used features that come in handy for specific situations, z-hinting and motion control programs.  Z-hinting allows sprites to be drawn in a certain order, e.g. if a sprite passes alternately in front of and behind a level object.  Z-hinting must enabled at for a given layer, and the z-hint values are otherwise ignored.  Motion control programs are little scripts attached to sprites that allow for some autonomous behavior, and have their own section in this document, which you ought to consult to learn more.
+
+@page
+
+@subsubsection @code{sprite_create}
+
+@code{sprite *sprite_create();}
+
+Creates a new sprite.
+
+@page
+
+@subsubsection @code{sprite_copy}
+
+@code{sprite *sprite_copy(sprite *sprite);}
+
+Makes a copy of the given sprite.
+
+@page
+
+@subsubsection @code{sprite_delete}
+
+@code{void sprite_delete(sprite *sprite);}
+
+Deletes the given sprite and frees all of the frame data.
+
+@page
+
+@subsubsection @code{sprite_set_frame}
+
+@code{void sprite_set_frame(sprite *sprite, int frame);}
+
+Selects a sprite frame for display.
+
+@page
+
+@subsubsection @code{sprite_get_frame}
+
+@code{int sprite_get_frame(sprite *sprite, int *frame);}
+
+Stores the frame that is currently selected in @var{frame}.  Returns 0 on success, or ERR if given an invalid sprite.
+
+@page
+
+@subsubsection @code{sprite_set_z_hint}
+
+@code{void sprite_set_z_hint(sprite *sprite, int z_hint);}
+
+Sets the sprite's z-hint.  When layer sorting is enabled, then sprites are sorted by z-hint before being drawn.  When layer sorting is not enabled, the sprite's z-hint has no effect.
+
+@page
+
+@subsubsection @code{sprite_get_z_hint}
+
+@code{int sprite_get_z_hint(sprite *sprite, int *z_hint);}
+
+Stores the sprite's z-hint into @var{z_hint}.  Returns 0 on success, or ERR if given an invalid sprite.
+
+@page
+
+@subsubsection @code{sprite_set_collides}
+
+@code{void sprite_set_collides(sprite *sprite, int mode);}
+
+Sets the sprite's collision mode.  The @var{mode} must be one of:  @option{COLLISION_OFF} (sprite does not collide), @option{COLLISION_BOX} (collision testing by bounding box), or @option{COLLISION_PIXEL} (collision testing by pixel-accurate mask).
+
+@page
+
+@subsubsection @code{sprite_get_collides}
+
+@code{int sprite_get_collides(sprite *sprite, int *mode);}
+
+Stores the sprite's collision mode into @var{mode}.  Returns 0 on success, or ERR if given an invalid sprite.
+
+@page
+
+@subsubsection @code{sprite_set_bounding_box}
+
+@code{void sprite_set_bounding_box(sprite *sprite, int frame, box *box);}
+
+Sets the bounding box for the specified frame of the sprite.
+
+@page
+
+@subsubsection @code{sprite_set_pixel_mask}
+
+@code{void sprite_set_pixel_mask(sprite *sprite, int frame, unsigned char *data);}
+
+Sets the pixel-accurate collision mask for the specified frame of the sprite.  Any non-zero value in the @var{data} buffer counts as an active pixel.
+
+@page
+
+@subsubsection @code{sprite_set_pixel_mask_from}
+
+@code{void sprite_set_pixel_mask_from(sprite *sprite, int frame, frame *source);}
+
+Sets the pixel-accurate collision mask for the specified frame of the sprite from a source frame.  If the source frame has a color key set, then the opaque pixels in the frame represent the collidable portions of the pixel mask.  If the source frame does not have a color key, then the source frame is desaturated and any pixel lighter than neutral gray (r, g, b = 128) counts as an active, collidable pixel.
+
+@page
+
+@subsubsection @code{sprite_set_position}
+
+@code{void sprite_set_position(sprite *sprite, int x, int y);}
+
+Sets the position of the sprite.
+
+@page
+
+@subsubsection @code{sprite_get_position}
+
+@code{int sprite_get_position(sprite *sprite, int *x, int *y);}
+
+Stores the position of the sprite into @var{x} and @var{y}.  Returns 0 on success, or ERR if given an invalid sprite.
+
+@page
+
+@subsubsection @code{sprite_set_velocity}
+
+@code{void sprite_set_velocity(sprite *sprite, int x, int y);}
+
+Sets the velocity of the sprite.  Note that this doesn't actually move the sprite or cause the sprite to be moved.  This is only used in setting up your proposed sprite motions for collision detection, e.g. so that you can test how far your sprite may move before it hits a wall or another sprite.
+
+@page
+
+@subsubsection @code{sprite_get_velocity}
+
+@code{int sprite_get_velocity(sprite *sprite, int *x, int *y);}
+
+Stores the velocity of the sprite into @var{x} and @var{y}.  Returns 0 on success, or ERR if given an invalid sprite.
+
+@page
+
+@subsubsection @code{sprite_add_frame}
+
+@code{int sprite_add_frame(sprite *sprite, frame *frame);}
+
+Adds the given frame to the sprite.  Please note that this does not make a copy of the frame, so be aware that you will probably want to make a copy of your graphics frame before passing it to this routine.  This returns the index of the newly-added frame.
+
+@page
+
+@subsubsection @code{sprite_add_frame_data}
+
+@code{int sprite_add_frame_data(sprite *sprite, int mode, int w, int h, void *data, void *auxiliary);}
+
+Loads a graphics frame into the given sprite.  The documentation for @code{frame_create()} has a detailed description of the arguments.  This is essentially a wrapper for that routine.  This returns the index of the newly-added frame.
+
+@xref{Creating frames}
+
+@page
+
+@subsubsection @code{sprite_add_subframe}
+
+@code{int sprite_add_subframe(sprite *sprite, int index, frame *frame);}
+
+Adds the frame to the sprite as a subframe on the given frame index.  Subframes are rendered in reverse order, i.e. the last-added subframe is rendered first.  This allows for easy compositing of sprite frames together (e.g. a shadow, a lighting effect, etc) into a single sprite.  Please note that this does not make a copy of the frame, however, so you'll probably want to make a copy of the frame before passing it into this routine.
+
+@page
+
+@subsubsection @code{sprite_load_program}
+
+@code{int sprite_load_program(sprite *sprite, char *program);}
+
+This routine loads the given motion control program into the sprite.  Please see the section on Motion Control Programs for a detailed description of how to write these programs.
+
+@page
+
+@subsection Strings
+
+Strings are what you'll use to display blocks of text onscreen, such as in character dialogue or as part of a heads-up display.  These are the routines used to create and manipulate strings.  After creating and configuring your text strings, you'll need to add them to a layer's string list in order for them to be displayed.  @emph{Be aware that strings are positioned absolutely on the display canvas and do not move when the layer camera moves.}
+
+@page
+
+@subsubsection @code{string_create}
+
+@code{string *string_create();}
+
+Creates a new string.
+
+@page
+
+@subsubsection @code{string_delete}
+
+@code{void string_delete(string *string);}
+
+Deletes the given string.
+
+@page
+
+@subsubsection @code{string_set_font}
+
+@code{void string_set_font(string *string, char *font);}
+
+Sets the font for the given string.  If an unknown font name is assigned to a string, the string will not be displayed.
+
+@page
+
+@subsubsection @code{string_set_position}
+
+@code{void string_set_position(string *string, int x, int y);}
+
+Sets the position for the given string.
+
+@page
+
+@subsubsection @code{string_set_text}
+
+@code{void string_set_text(string *string, char *text);}
+
+Sets the text contents of the given string.
+
+@page
+
+@section The Motion Control System
+
+
+@page
+
+@subsection The Language
+
+Motion control programs are very short programs, written in a custom language, that give sprites some simple autonomy, i.e. without having to run callbacks in the main game loop.  They're especially useful when the programmer is using a scripting language but still desires to animate great numbers of sprites., because they can eliminate the need to fire potentially-heavy script callbacks for sprite motion.
+
+Motion control programs can also be used to generate simple particle systems, environmental effects, and the like.  Note that motion control programs aren't intended to be a generic replacement for sprite movement.  For more detailed information, please see the in-depth guide at the [[motion control programs]] page.
+
+The language consists of the following instructions.  Instructions and their arguments appear one per line.  Whitespace and empty lines are ignored.
+
+@subheading Reading and setting variables
+
+
+@table @code
+
+@item set var, var/immediate
+store the right-side value in the left-side named var
+
+@item add var, var/immediate
+add the right-side value to the left-side named var
+
+@item stc var, var/immediate
+stochastic alter the left-side var with a range of -(var/imm)..var/imm
+
+@item trk var, id
+copy over the left-side named var contents from another sprite
+
+@item avg var, id
+average the left-side named var contents with those of another sprite
+
+@end table
+
+
+@subheading Conditional instructions
+
+@table @code
+
+@item beq var, var/immediate
+break (immediately exit the program) if equal
+
+@item bne var, var/immediate
+break if not equal
+
+@item blt var, var/immediate
+break if less than
+
+@item bgt var, var/immediate
+break if greater than
+
+@item bmp id
+break if there is a collision with the given map
+
+@item bnm id
+break if there is a not a collision with the given map
+
+@item bst var/immediate
+stochastic break, i.e. exit if random value between 0 and imm is zero
+
+@end table
+
+
+@subheading Sprite and list manipulation
+
+@table @code
+
+@item copy id
+make a copy of the sprite and replace the current sprite with the copy for the remainder of the program
+
+@item ladd id
+add the sprite to the given list
+
+@item lrem id
+remove the sprite from the given list
+
+@item del
+delete the sprite
+
+@end table
+
+
+@subheading Miscellaneous
+
+@table @code
+
+@item xchgp ptr
+exchange the sprite's motion control program with another sprite's program
+
+@item sound id
+play the sound
+
+@item eoc
+end of code
+
+@end table
+
+The @var{var} is a named variable, one of the following:  @var{xpos}, @var{ypos}, @var{xvel}, @var{yvel}, @var{frame}, @var{tick}.  @var{xpos} and @var{ypos} refer to the sprite's position, and @var{xvel} and @var{yvel} refer to the sprite's velocity.  Immediate values are integers, and @var{id} values specify a list, sprite, map, or sound.  Argument order matches Intel-style assembly language syntax, i.e. instructions that set or change a variable have the destination given first (@code{set xpos, 4} can be read as @code{xpos = 4})
+
+Every sprite also has its own internal tick counter, and this increments every time the sprite's motion-control program is run.
+
+@page
+
+@subsection Running motion control programs
+
+These routines execute the motion control programs for a sprite or for a list of sprites.
+
+@page
+
+@subsubsection @code{motion_exec_single}
+
+@code{int motion_exec_single(sprite *sprite);}
+
+Executes the motion control program for the given sprite.  Returns 0 on success, or an error code on failure.
+
+@page
+
+@subsubsection @code{motion_exec_list}
+
+@code{int motion_exec_list(list *list);}
+
+Executes the motion control program for every sprite in the given list.  Returns 0 on success, or an error code if any motion control program fails to execute.
+
+@page
+
+@section Introspection and Collision Detection
+
+
+@page
+
+@subsection Inspection
+
+It's often the case that you'll need to have a sprite query its surroundings or check to see if anything else is nearby.  If you wanted to have a sprite avoid a patch of water, for example, you could use the introspection routines to read the nearby tiles and have the sprite govern itself accordingly.  These introspection routines allow you to do that, along with a few other methods of examining the environment.
+
+@page
+
+@subsubsection @code{inspect_adjacent_tiles}
+
+@code{void inspect_adjacent_tiles(map *map, sprite *spr, int dir, map_fragment *res);}
+
+Returns a buffer of tiles adjacent to the sprite on the specified map.  The direction must be one of @option{INSPECT_NW}, @option{INSPECT_N}, @option{INSPECT_NE}, @option{INSPECT_E}, @option{INSPECT_SE}, @option{INSPECT_S}, @option{INSPECT_SW}, @option{INSPECT_W}.  If the sprite is using bounding box collision, the buffer of tiles is determined by the edge of the bounding box.  If pixel-accurate collision is enabled, the bounding edges of the pixel mask are used.
+
+@page
+
+@subsubsection @code{inspect_obscured_tiles}
+
+@code{void inspect_obscured_tiles(map *map, sprite *spr, map_fragment *res);}
+
+Returns a buffer of tiles obscured by the sprite on the specified map.  If the sprite is using bounding box collision, the tiles are determined by the edge of the bounding box.  If pixel-accurate collision is enabled, the bounding edges of the pixel mask are used.
+
+@page
+
+@subsubsection @code{inspect_line_of_sight}
+
+@code{int inspect_line_of_sight(map *map, sprite *spr, int xofs, int yofs, int dist, sprite *target);}
+
+Performs a line-of-sight test to determine visibility from the originating sprite to the target sprite within the given map.  The @var{xofs} and @var{yofs} offsets determine the point, relative to the sprite's upper left corner, from which the visibility test is performed.  These offsets can be negative, performing the visibility test from a point outside the originating sprite's frame.  The @var{dist} value is the maximum range for the test.
+
+The originating sprite does not need to have collision detection enabled, but the target sprite must have collision detection enabled.  If the target sprite has bounding-box collision enabled, the four corners of the bounding box are checked for visibility from the originating sprite.  If the target sprite has pixel-accurate collision enabled, the visibility test is performed on the four corners of the pixel mask's bounding edges.
+
+@page
+
+@subsubsection @code{inspect_in_frame}
+
+@code{list *inspect_in_frame(list *list, box *range);}
+
+Returns a list of sprites that fall within the given rectangle.
+
+@page
+
+@subsubsection @code{inspect_near_point}
+
+@code{sprite *inspect_near_point(list *list, int x, int y, int distance);}
+
+Returns a list of sprites near the given point.
+
+@page
+
+@subsection Collisions
+
+These routines detect collisions among sprites, and between sprites and maps.
+
+@page
+
+@subsubsection @code{collision_with_map}
+
+@code{void collision_with_map(sprite *sprite, map *map, int slip, map_collision *res);}
+
+Checks the given sprite for collision against the given map.  The optional slip argument indicates that, when a collision occurs, the sprite will be adjusted by the given number of one-pixel increments to continue motion.  The slip factor allows sprites to travel near the corners of maps without stopping on all single-pixel collisions.
+
+The result is stored @var{res}.  The @var{res.mode} value will be @option{COLLISION_ATSTART} to indicate that the sprite and map were colliding before motion began, @option{COLLISION_NEVER} to indicate that no collision has occurred, or @option{COLLISION_INMOTION} to indicate that collision occurred during motion.  The pixel distance before the sprite hits the map is stored in @var{res.stop} and the distance that the sprite may travel after being adjusted by the given @var{slip} value is stored in @var{res.go}.
+
+@page
+
+@subsubsection @code{collision_with_sprites}
+
+@code{int collision_with_sprites(sprite *sprite, list *sprite_list, int limit, sprite_collision res[]);}
+
+Tests the given sprite for collisions with all collidable members of the given sprite list.  Only @var{limit} collisions will be returned, and @var{res} must be large enough to hold this number of collisions.  The @var{res.mode} value will be @option{COLLISION_ATSTART} to indicate that the sprite and map were colliding before motion began, @option{COLLISION_NEVER} to indicate that no collision has occurred, or @option{COLLISION_INMOTION} to indicate that collision occurred during motion.  The pixel distance before the sprite hits the target is stored in @var{res.dist} and the direction in which the collision occurred is stored in @var{res.hit}.
+
+@page
+
+@section Utilities
+
+
+@page
+
+@subsection Timing
+
+A routine useful for setting up a basic delay loop and holding a steady framerate.
+
+@page
+
+@subsubsection @code{delay}
+
+@code{int delay(int fps);}
+
+If the time between calls to @code{delay()} is less than necessary (i.e. the game would otherwise run too fast) to maintain the given @var{fps} rate, then the routine will delay until enough time has passed.  if the game is running too slowly to maintain the requested @var{fps} rate, @code{delay()} will return the number of frames that must be skipped to maintain speed.
+
+@page
+
+@subsection Scheduled events
+
+The Brick Engine includes a simple event scheduler.  Events are functions that take a single void * argument and return nothing.  They run in their own thread, and can be schedule to run once, several times, or to be repeated indefinitely.  They can also be paused, halted, or temporarily skipped.
+
+@page
+
+@subsubsection @code{event_add}
+
+@code{int event_add(int delay, int count, event ev, void *data);}
+
+Schedules an event to run after @var{delay} milliseconds.  The @var{count} determines how many times the event is run.  If @var{count} is negative, the event will repeat indefinitely.  @var{ev} is a pointer to the function to run.  When @var{ev} is called, @var{data} is passed to it.  The @var{data} argument can, of course, be null.  The event ID is returned, so that messages can be passed to the event, e.g. to pause or cancel its execution.
+
+@page
+
+@subsubsection @code{event_message}
+
+@code{void event_message(int id, int msg);}
+
+Sends a message to the given event.  If the message is @option{EVENT_GO}, the event will run as normal.  If the message is @option{EVENT_STOP}, the event will be cancelled.  If the message is @option{EVENT_PAUSE}, event execution is paused until the event is resumed (with @option{EVENT_GO}) or halted (with @option{EVENT_STOP}).  If the message is @option{EVENT_SKIP1}, the event will not execute the next time it's scheduled to, but will execute each subsequent time and its execution count will be decremented as though it ran (e.g. if it's scheduled to run 10 times, then after being sent @option{EVENT_SKIP1} once, it will run 9 times total).
+
+
+
+@node Index
+@unnumbered Index
+
+@printindex cp
+
+@bye

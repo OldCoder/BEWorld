@@ -1,0 +1,27 @@
+License information                                    Revised: 120422
+----------------------------------------------------------------------
+
+BEWorld is copyright (c) 2012 Robert Crowley.
+
+BEWorld is distributed under the  following license:  Creative Commons
+Attribution-NonCommercial-ShareAlike  3.0.  For more information, vis-
+it:
+
+      http://creativecommons.org/
+
+Brick Engine is distributed under the license described in:
+
+      engine/license-engine.txt
+
+Brick Engine TCL Bindings are  distributed under the license described
+in:
+      bindings/tcl/license-brick-tcl.txt
+
+Important note:
+
+This software  is provided on an  as-is basis  with  no warranty.  The
+entire risk as to the quality and performance of the software is  with
+you.  Should the software prove defective, you  assume the cost of all
+necessary servicing, repair or correction. In no event will any of the
+developers, or any other party, be liable to anyone for damages  aris-
+ing out of use of the software, or inability to use the software.

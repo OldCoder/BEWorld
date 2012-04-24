@@ -1,0 +1,21 @@
+Brick Engine                                           Revised: 120422
+----------------------------------------------------------------------
+
+For context that explains  the use of  this tree in  BEWorld,  see the
+README file located one directory level up.
+
+To build the Brick Engine, you need:
+
+      * cmake
+      * SDL
+      * SDL_mixer
+      * SDL_image (recommended)
+
+In the top-level Brick Engine source directory, run this command:
+
+      cmake .
+
+This will generate  makefiles specific to your platform.  You can then
+run "make" as usual:
+
+      make

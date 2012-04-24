@@ -1,0 +1,18 @@
+Brick Tcl bindings, V5.4                               Revised: 120422
+----------------------------------------------------------------------
+
+For context that explains  the use of  this tree in  BEWorld,  see the
+README file located two directory levels up.
+
+To build this software, you need:
+
+      * cmake
+      * tcl 8.5.X
+      * Brick Engine (should be included with this module)
+
+In the directory that contains this file, run the command:
+
+      cmake .
+
+This will  generate the appropriate "make" files,  which you  may then
+use to build the software.

@@ -1,0 +1,148 @@
+BEWorld source bundle                                  Revised: 120422
+----------------------------------------------------------------------
+
+1. Overview.
+
+BEWorld is a simple Linux 2D game and a  starting point for coders who
+are interested in developing similar games; Tcl coders, in particular,
+as this version is written in pure Tcl plus the Brick Engine.
+
+The game consists of a self-contained Tcl script.  Sound effects, mus-
+ic,  and sprites are all included in the file.  There's no need to in-
+stall  any  external bits and pieces except for an  interpreter  named
+Brick Tcl  (or brick-tcl) and SDL,  a standard package that  Brick Tcl
+relies on.
+
+The game should run on most  Linux systems that have  XOrg, SDL, and a
+sound card,  including lightweight or "tiny" distros. OpenGL  is  sup-
+ported but not required.
+
+This is  a  fork of an older (apparently unnamed)  demo program by the
+lead developer for the Brick Engine.  The flavor is similar to that of
+a  real-time  Nethack;  there  are several small connected rectangular
+worlds  and  the goal is to travel through the various worlds and make
+it to the end.  However, the current version is much more limited than
+Nethack. It should be thought of as a proof of concept.
+
+That said,  the game features  sprite code  that's  relatively easy to
+work with,  both  random  and  invariant levels,  a map generator that
+should work  in other Tcl games,  support for embedded music and sound
+effects, the start of an object-oriented component framework, and oth-
+er features that might be useful.
+
+The version of BEWorld provided here is intended for developers. Users
+are welcome to give it a try,  but note that installation  requires  a
+"build" procedure. For more information, see the following sections.
+
+----------------------------------------------------------------------
+
+2. History and licenses.
+
+Steve H., the creator of the Brick Engine, wrote an apparently unnamed
+Brick Engine demo in the 2000s.  It used an old version of the library
+API (one that predated the Brick 5.2 API).
+
+BEWorld started out as a port of the demo to the Brick 5.2 API. Subse-
+quently,  the  code was restructured and new features were added (with
+Steve's advice and assistance). Eventually, it was ported to the Brick
+5.4 API.  Brick 5.4 is now required, though older APIs are partly sup-
+ported.
+
+As of Spring 2012, upstream for the Brick Engine still existed but the
+package had been renamed to "Aries Engine" and rehosted.  This version
+of BEWorld has not been tested against the Aries Engine.
+
+Brick Engine  5.4  and the associated  Tcl bindings are released under
+MIT/X-based  licenses.  For  more information,  see the following  two
+files:
+
+      engine/license-engine.txt
+      bindings/tcl/license-brick-tcl.txt
+
+BEWorld 120422 is released under a Creative Commons license; specific-
+ally,  Creative Commons Attribution NonCommercial ShareAlike 3.0. This
+includes  the  music,  but note for attribution purposes that the code
+and  the music were created by  different  people.  Additionally, note
+that some of the Tcl code is based on public posts by several Tcl dev-
+elopers.
+
+For more information, see the source code and the file LICENSE.
+
+----------------------------------------------------------------------
+
+3. Requirements.
+
+BEWorld itself  doesn't need to be built; as noted previously,  it's a
+self-contained Tcl  script.  However,  if you'd like to play the game,
+you'll  need  to build the Brick Engine 5.4 library and the associated
+"brick-tcl" interpreter.  If  you're interested,  proceed as described
+in this section and the next one.
+
+Start with a  Linux distro that includes  cmake, gcc,  and development
+packages for XOrg, SDL, Tcl, jpeg, libmikmod, and libpng.
+
+Note:  "development packages" means packages that provide header files
+and libraries. The exact names of these packages will vary from distro
+to distro.
+
+SDL should include the core SDL library (release 1.2.10), SDL graphics
+(2.0.22),  SDL  image  support  (1.2.10),  and the SDL mixer (1.2.11).
+Other releases may (or may not) work.
+
+For Tcl, any of the 8.5.X releases should work. 8.4.X isn't supported.
+For gcc, releases 4.4.3 or 4.6.2 are recommended,  but 3.4.6 and 4.2.4
+may work.
+
+OpenGL  isn't  required.  BEWorld  should work fine whether or not you
+have  OpenGL libraries or related  features  such as DRI,  accelerated
+graphics, or direct rendering.
+
+----------------------------------------------------------------------
+
+4. Building BEWorld.
+
+The following  instructions  are intended for Linux developers.  These
+instructions  assume  that  people  are  familiar  with  Linux "build"
+procedures in general.
+
+(a) Optional: Log-in as root.
+
+If you're logged in as root, the game will install to a directory tree
+named  /opt/beworld and  anybody  will  be able to play it.  If you're
+logged in as an ordinary user, the private (or semi-private) directory
+tree $HOME/beworld will be used instead.
+
+(c)  Verify  that  the  development  packages discussed previously are
+installed.
+
+(d) Obtain the BEWorld source bundle.  This may involve  downloading a
+source tarball or using "git".
+
+(e)  Go to  /var/tmp and  unpack and/or  copy the  BEWorld source tree
+there.  Note:  Other directories may  be  used  instead  (for example,
+$HOME/tmp).
+
+(f) Step (e)  should create a subdirectory which contains a file named
+"buildme.sh". Go into that subdirectory.
+
+(g) Execute this command: sh ./buildme.sh
+
+The preceding command should build Brick Engine and "brick-tcl". Addi-
+tionally,  it should install a copy  of  BEWorld.  If copies  of Brick
+Engine and/or "brick-tcl" are  already installed in system trees  such
+as /usr or /usr/local, those copies won't be overwritten or affected.
+
+If the command is successful,  it'll tell you the location of a script
+named "beworld".  To play the game,  just run the script.  There's  no
+need to set PATH, LD_LIBRARY_PATH, etc.
+
+If the command is unsuccessful, an error message should be printed.
+
+(h)  At this point,  you can delete the subdirectory mentioned in step
+(f). It's no longer needed.
+
+Note:  If you  play  the game,  you should hear music as well as sound
+effects.
+
+To deinstall the game,  just delete the directory tree /opt/beworld or
+$HOME/beworld.

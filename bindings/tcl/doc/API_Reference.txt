@@ -1,0 +1,1204 @@
+====== Tcl API Reference ======
+
+Welcome to the quick reference guide for the Brick Engine, v5.3.  This document covers the Tcl API.
+
+===== Basic Engine Operation =====
+
+==== Starting and stopping the Brick Engine ====
+
+The engine automatically starts when you either load the module or start the **br** program, so you don't need to do anything special to get started.
+
+==== Graphics ====
+
+The graphics display may be started and stopped at any time (e.g. to change from windowed to full-screen mode, or to change the display resolution), without interfering with the rest of the engine.  These are the routines to activate and deactivate the graphics display.
+
+=== br::graphics modes ===
+
+<xterm>
+br::graphics modes
+</xterm>
+
+Returns a list of the available graphics modes.
+
+=== br::graphics open ===
+
+<xterm>
+br::graphics open **sdl** //width// //height// //fullscreen//
+br::graphics open **accel** //width// //height// //fullscreen// //zoom-factor//
+</xterm>
+
+Opens the graphics display.  The **sdl** mode is always available, and **accel** will be available if the Brick engine has been built with OpenGL-based acceleration.  The //width// and //height// values determine the size of the output display.  The **fullscreen** flag is a boolean value to indicate whether or not to use the full-screen mode.  The **accel** mode takes an optional pixel multiplier for zoomed display; note that this does not change the display resolution, only its size.  //There is a Brick Engine-internal maximum width and height, set at compile time and defaulting to 640x480.//
+
+=== br::graphics close ===
+
+<xterm>
+br::graphics close
+</xterm>
+
+Closes the active graphics display.
+
+=== br::graphics info ===
+
+<xterm>
+br::graphics info
+</xterm>
+
+Returns a list of information about the current display mode, consisting of the active display mode, width, and height.
+
+=== br::graphics window-title ===
+
+<xterm>
+br::graphics window-title //title//
+</xterm>
+
+Sets the title of the display window.
+
+==== Audio ====
+
+Audio output may be activated or deactivated at any time.  These routines let you do that.
+
+=== br::audio modes ===
+
+<xterm>
+br::audio modes
+</xterm>
+
+Returns a list of the available audio modes.
+
+=== br::audio open ===
+
+<xterm>
+br::audio open **speaker**
+</xterm>
+
+Opens the audio output.  If the mode is **speaker**, the audio is sent to the speakers.  No other modes are presently available.
+
+=== br::audio close ===
+
+<xterm>
+br::audio close
+</xterm>
+
+Closes the active audio output.
+
+==== Input ====
+
+These are functions used to configure and read user input from keyboard, joystick, and mouse.  The joystick is the primary type of input device recognized by the Brick Engine, and the engine supports up to eight joysticks at a time.  You don't, of course, need any actual joysticks to play, because the engine will map all keyboard input onto one of eight "virtual joysticks":  each keypress is turned into an axis, hat, or button motion on one of the eight joysticks, and this keyboard-input mapping can be altered at any time.  If you've got actual hardware joysticks plugged in, the inputs provided by these joysticks (axes, hats, and buttons) can be read directly.
+
+=== br::io fetch ===
+
+<xterm>
+br::io fetch //input-number//
+</xterm>
+
+Returns a list containing the current status for the requested input device:
+
+| | { | { axes .. } | { hats .. } | { buttons .. } | space | tab | sel | pause | esc | } |
+| Index | | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | |
+
+There are eight inputs from which movement and actions can be requested, numbered 0 through 7.  Keys can be assigned to any action (axis, hat, or button) on any input.  If joysticks are plugged in, they are assigned to the inputs starting at **0**.
+
+Axes have a range from -127 to 127.  Key presses will set the axis to the ends of this range, while an analog joystick input may return any value within this range.  Up to eight axes are read, either from joystick or from the assigned keys.
+
+Usually, the first two axes will represent horizontal and vertical motion, either from the keyboard or the joystick.  Joysticks with more than one analog stick will use additional axes to represent the movement on the additional sticks.  By default, the arrow keys are mapped onto axes 0 and 1 on input 0.
+
+Hats represent the four-way directional inputs present on some joysticks.  Hat values range from -1 to 1 and are returned as pairs of horizontal and vertical results.  Note that a joypad-style controller with just one directional input probably returns its results as a pair of axes rather than a hat.  By default, the keys **wasd** are mapped onto hat 0 of input 0.
+
+Button presses return either 0 or 1.  By default, the keys **left ctrl**, **left alt**, **z**, and **x** are assigned to button presses 0 through 3 on input 0.
+
+There are eight axes, four hats, and twenty buttons available on each input.
+
+The keys **space**, **tab**, **enter**/**return** (as **select**), **pause**, and **escape** are always included in the results.
+
+=== br::io mouse ===
+
+<xterm>
+br::io mouse //input-number//
+</xterm>
+
+Returns the motion of the mouse along with button clicks in a list:
+
+| | { | x | y | { buttons .. } | } |
+| Index | | 0 | 1 | 2 | |
+
+There will rarely be more than one mouse, so in most situations the only useful input number will be **0**.
+
+=== br::io grab ===
+
+<xterm>
+br::io grab //mode//
+</xterm>
+
+Enables or disables the input grab.  If the window manager is interfering with the game controls, it can be useful to enable the input grab, but be warned that this makes it almost impossible to recover from a game stuck in an infinite loop.
+
+=== br::io has-quit ===
+
+<xterm>
+br::io has-quit
+</xterm>
+
+Returns true if the user has pressed the application's close or quit button.
+
+=== br::io wait ===
+
+<xterm>
+br::io wait //delay//
+</xterm>
+
+Waits until all input buffers are cleared, and then waits until any activity on any of the inputs is received.  If the application-quit button is pressed, this immediately returns -1.  The **delay** value indicates how many times each second the inputs will be checked for activity, so that the processor use can be kept low.
+
+=== br::io assign ===
+
+<xterm>
+br::io assign //input-number// **axis** //index// //direction// //key-id//
+br::io assign //input-number// **hat** //index// //direction// //key-id//
+br::io assign //input-number// **button** //index// //key-id//
+</xterm>
+
+Assigns the key-id to the given action on the given input.  Each axis has two directions, **left** or **right**, to which a keypress can be assigned.  Hats can have a keypress assigned to any of the four directions, **up**, **right**, **down**, or **left**.
+
+=== br::io read-key ===
+
+<xterm>
+br::io read-key
+</xterm>
+
+Halts until a single keypress can be read, and a keycode returned.  //This is not useful for general-purpose input, but is intended only to let the programmer determine keycodes interactively, for use with **br::io assign**.//
+
+===== The Graphics Subsystem =====
+
+There are two parts of the Brick Engine graphics subsystem that deal with system-wide graphics configuration:  render settings and font handling.  Everything else (i.e. the sprites, strings, and tile-based maps) is addressed later on.
+
+==== Rendering ====
+
+These are the routines used to set system-wide rendering options.
+
+=== br::render bg-fill ===
+
+<xterm>
+br::render bg-fill //mode//
+</xterm>
+
+Enable or disable the solid-color background fill.
+
+=== br::render bg-color ===
+
+<xterm>
+br::render bg-color //r// //g// //b//
+</xterm>
+
+Sets the background fill color to the value given by r, g, b, which have a range from 0-255.
+
+=== br::render set-overdraw ===
+
+<xterm>
+br::render set-overdraw //width// //height//
+</xterm>
+
+Sets the amount of overdraw applied to the internal render canvas.  This does not affect the displayed canvas size.  Some sprite frame types (e.g. the pixel-repositioning frame) may depend on graphics data being drawn outside the screen borders for proper composition of the display, and the overdraw instructs the renderer to generate this extra data.
+
+=== br::render display ===
+
+<xterm>
+br::render display
+</xterm>
+
+Renders the current frame.
+
+=== br::render to-disk ===
+
+<xterm>
+br::render to-disk //filename//
+</xterm>
+
+Dumps the current frame in RAW format to the named file.
+
+==== Fonts ====
+
+The Brick Engine has a very simple and lightweight font renderer built in.  Fonts are loaded into the engine as bitmaps, and characters are fixed-width.  One font, named **default**, is built into the Brick Engine, and additional fonts can be loaded at any time.
+
+=== br::font add ===
+
+<xterm>
+br::font add //font-name// //char-width// //char-height// //rgb-data// (//r// //g// //b//)
+</xterm>
+
+Adds a new font named **name**.  The **rgb-data** is a byte array containing pixel data for 128 characters arranged in a row, each character having the dimensions given in **w** and **h**.  If optional color components are given, they will be used as a color key.
+
+=== br::font info ===
+
+<xterm>
+br::font info //font-name//
+</xterm>
+
+Returns a list containing the character width and height for the given font.
+
+=== br::font from-disk ===
+
+<xterm>
+br::font from-disk //font-name// //filename// (//r// //g// //b//)
+</xterm>
+
+Adds a new font named **name** from the compressed image file named **file**.  If optional color components are given, they will be used as a color key.  The font image is assumed to be 128 characters wide.  //This routine is only available if the brick engine has been built with SDL_image support.//
+
+=== br::font from-buffer ===
+
+<xterm>
+br::font from-buffer //font-name// //buffer// (//r// //g// //b//)
+</xterm>
+
+Adds a new font named **name** from the **data** buffer which contain a compressed image file.  If optional color components are given, they will be used as a color key.  The font image is assumed to be 128 characters wide.  //This routine is only available if the brick engine has been built with SDL_image support.//
+
+===== The Audio Subsystem =====
+
+Every game needs sound!  The Brick Engine provides functionality to handle both song and sound playback with ease.
+
+==== Sound playback ====
+
+These routines let you load sounds from different sources (from a known sound file format stored on disk or in a memory buffer, or as raw sound data), play them as needed, and stop them or adjust the sound volume/panning in mid-play.
+
+=== br::sound load-file ===
+
+<xterm>
+br::sound load-file //filename//
+</xterm>
+
+Loads a sound from a file on disk and returns the new sound ID.  The list of supported file formats can be found in the documentation for [[http://www.libsdl.org/projects/SDL_mixer/|SDL_mixer]].
+
+=== br::sound load-buffer ===
+
+<xterm>
+br::sound load-buffer //data//
+</xterm>
+
+Loads a sound from the **data** buffer and returns the new sound ID.  The list of supported file formats can be found in the documentation for [[http://www.libsdl.org/projects/SDL_mixer/|SDL_mixer]].
+
+=== br::sound load-raw ===
+
+<xterm>
+br::sound load-raw //raw-sound-data//
+</xterm>
+
+Loads a buffer of raw sound data into the engine and returns a sound ID.  The data must match the compile-time sound format.  By default, the sound format is 8-bit unsigned data.
+
+=== br::sound play ===
+
+<xterm>
+br::sound play //sound-id// (//volume//)
+</xterm>
+
+Plays the given sound.  The volume is optional and may range from 0 to 128.  This returns the ID of the audio channel that is playing the sound, so that the sound can be stopped or have its volume or panning adjusted.
+
+=== br::sound halt ===
+
+<xterm>
+br::sound halt //channel-id//
+</xterm>
+
+Stops the sound playing on the given channel.  If the channel is -1, this halts all sounds.
+
+=== br::sound adj-vol ===
+
+<xterm>
+br::sound adj-vol //channel-id// //volume//
+</xterm>
+
+Sets the volume of the sound playing on the given channel ID.  The volume may range from 0 to 128.  If the channel ID is -1, sets the volume for all currently-playing sounds.
+
+=== br::sound adj-pan ===
+
+<xterm>
+br::sound adj-pan //channel-id// //panning//
+</xterm>
+
+Sets the panning of the sound playing on the given channel ID.  The panning value ranges from 0 (left speaker only) to 254 (right speaker only), and is balanced at 127.  If the channel ID is -1, sets the panning for all currently-playing sounds.
+
+==== Song playback ====
+
+The song playback routines will let you start, stop, and otherwise control the background music for your game.  //Note that because the Brick Engine relies on  [[http://www.libsdl.org/projects/SDL_mixer/|SDL_mixer]] for its music playback support, so the list of supported file formats depends on how SDL_Mixer has built for your system.//
+
+=== br::song play-file ===
+
+<xterm>
+br::song play-file //filename// (//fade-in-delay//)
+</xterm>
+
+Loads and plays the named song from disk, with an optional fade-in delay given in milliseconds.
+
+=== br::song play-buffer ===
+
+<xterm>
+br::song play-buffer //song-data// (//fade-in-delay//)
+</xterm>
+
+Loads and plays the song contained in the given memory buffer, with a fade-in delay given in milliseconds.
+
+=== br::song pause ===
+
+<xterm>
+br::song pause
+</xterm>
+
+Pauses the currently-playing song.
+
+=== br::song resume ===
+
+<xterm>
+br::song resume
+</xterm>
+
+Resumes the currently-paused song.
+
+=== br::song halt ===
+
+<xterm>
+br::song halt (//fade-out-delay//)
+</xterm>
+
+Stops the currently-playing song with fade-out delay given in milliseconds.
+
+=== br::song set-position ===
+
+<xterm>
+br::song set-position //position//
+</xterm>
+
+Sets the position of the currently-playing song.
+
+=== br::song adj-vol ===
+
+<xterm>
+br::song adj-vol //volume//
+</xterm>
+
+Sets the music playback volume.  The volume can range from 0 to 128.
+
+===== Items and Lists =====
+
+These are the bread-and-butter routines in the Brick Engine, the API calls you'll use again and again in developing your games, so it's worth it to familiarize yourself with these.
+
+==== Lists ====
+
+Lists are everywhere in computing, and the Brick Engine is no different.  The list implementation built into the engine is a pretty simple doubly-linked list, and you'll most often use it in two places:  adding sprites and strings to the sprite- and string- display lists, and getting back lists of sprites from the introspection routines.  (You may also find some more sophisticated uses for the Brick Engine lists, though, e.g. setting up some intricate collision-detection schemes where you'll test certain groups of enemy sprites against certain player projectiles.)  These routines are what you'll use to create and manipulate Brick Engine lists.
+
+=== br::list create ===
+
+<xterm>
+br::list create
+</xterm>
+
+Creates a new list and returns its id.
+
+=== br::list empty ===
+
+<xterm>
+br::list empty //list-id//
+</xterm>
+
+Empties the given list.  Note that this does not delete any of the items in the list.
+
+=== br::list delete ===
+
+<xterm>
+br::list delete //list-id//
+</xterm>
+
+Deletes the given list.  Note that this does not delete any of the items in the list.
+
+=== br::list add ===
+
+<xterm>
+br::list add //list-id// //item-id//
+</xterm>
+
+Adds the given item to the end of the list.
+
+=== br::list prepend ===
+
+<xterm>
+br::list prepend //list-id// //item-id//
+</xterm>
+
+Adds the given item to the start of the list.
+
+=== br::list shift ===
+
+<xterm>
+br::list shift //list-id//
+</xterm>
+
+Removes the first item from the head of the list and returns it.
+
+=== br::list pop ===
+
+<xterm>
+br::list pop //list-id//
+</xterm>
+
+Removes the last item from the list and returns it.
+
+=== br::list remove ===
+
+<xterm>
+br::list remove //list-id// //item-id//
+br::list remove //list-id// //item-id// **head**
+br::list remove //list-id// //item-id// **tail**
+br::list remove //list-id// //item-id// **all**
+</xterm>
+
+Removes the given item from the list.  If the optional third argument is **head**, then the first matching item is removed.  If the optional third argument is **tail**, then the last matching item is removed.  If no third argument is given, or the third argument is **all**, all matching items are removed.
+
+=== br::list length ===
+
+<xterm>
+br::list length //list-id//
+</xterm>
+
+Returns the number of items in the given list.
+
+=== br::list find ===
+
+<xterm>
+br::list find //list-id// //item-id//
+</xterm>
+
+Determines whether the given item is in the list.
+
+==== Frames ====
+
+A frame is a container for any sort of graphics data in the Brick Engine.  Whether you are working with simple pixel data, color keyed data (i.e. one color treated as transparent), or one of the various visual effects (e.g. convolution kernel, desaturation, and so on), the data is always stored in a frame.  Some of the sprite and tile routines, such as sprite_add_frame_data(), handle the process of creating and loading the frame for you, but others, such as sprite_add_subframe(), require that you create and prepare the frame before passing it to the routine.
+
+Frames can be sliced into subframes (good for cutting up sprite sheets), and it's also possible to convert RGB frames into almost any other frame type, e.g. to create a desaturated version of a sprite, for use in some effect.
+
+Last, if you've built the Brick Engine with the SDL_Image dependency, you can load and unpack a variety of image types directly into frames, either from disk or from a memory buffer.
+
+=== br::frame create ===
+
+<xterm>
+br::frame create **none** //w// //h//
+br::frame create **rgb** //width// //height// //rgb-data// (//r// //g// //b//)
+br::frame create **br** //width// //height// //rgb-adj-data//
+br::frame create **ct** //width// //height// //adj-data//
+br::frame create **hl** //width// //height// //rgb-adj-data//
+br::frame create **sl** //width// //height// //rgb-adj-data//
+br::frame create **sat** //width// //height// //adj-data//
+br::frame create **displ** //width// //height// //displacement-data//
+br::frame create **convo** //width// //height// //pixel-mask// //{ kernel-width kernel-height { kernel-data .. } divisor offset }//
+br::frame create **lut** //width// //height// //pixel-mask// { lookup-table-data .. }
+</xterm>
+
+Creates a new graphics frame using the given frame data.  The **mode** determines the frame type:
+
+  * **none** - takes no display data and produces no output.  This isn't very useful, except for situations where some unusual collision detection is needed.
+  * **rgb** - the data is three-bytes-per-pixel rgb data and an optional chroma key can be given as three additional arguments, **r g b**.  The data is drawn directly onto the render canvas.
+  * **br** - the data is unsigned char data in rgb format.  A pixel component value of 64 is neutral and doesn't alter image brightness.  Values less than 64 darken the image, and values greater than 64 brighten the image.
+  * **ct** - the data is unsigned char data, one char per pixel.  A pixel component value of 64 is neutral and leaves the image data unaltered.  Values less than 64 decrease contrast to the neutral grey, and values greater than 64 increase the contrast of the image data.
+  * **hl** - the data is unsigned char data in rgb format.  A pixel component value of 128 is neutral and doesn't alter image lightness.  Values less than 128 darken the image toward black, and values greater than 128 lighten the image toward white.  This is also known as a "hard light" filter.
+  * **sl** - the data is unsigned char data in rgb format.  a pixel component value of 128 is neutral and doesn't alter image lightness.  Values less than 128 lighten the image, and values greater than 128 darken the image.  This is also known as a "soft light" filter.
+  * **sat** - the saturation of the underlying image is adjusted by the value in the unsigned char adjustment data.  An adjustment value of 128 leaves the image unchanged.  A value of 64 desaturates the image, and values between 64 and 128 give varying degrees of desaturation.  Values less than 64 invert the hue of the image data.  Values greater than 128 increase the saturation.
+  * **displ** - the displacement data is an array of 16-bit (big-endian) x/y coordinate pairs.  Each coordinate pair represents an offset from the specific pixel in the frame to a location in the underlying image data, from which to retrieve the given pixel.
+  * **convo** - the convolution kernel as specified is run on the underlying image data, for each non-zero pixel in the pixel mask.
+  * **lut** - then each pixel in the underlying image data is replaced according to the the pixel value in the lookup table.  The lookup table is a list containing 768 entries ranging from 0 to 255.  This list will be internally divided into three sets of 256 bytes, each one constituting a lookup table (red first, then green, then blue), where the pixel component in the source image is used as the index into the lookup table for the resulting pixel value.
+
+=== br::frame info ===
+
+<xterm>
+br::frame info //frame-id//
+</xterm>
+
+Returns the frame dimensions and type.
+
+=== br::frame copy ===
+
+<xterm>
+br::frame copy //frame-id//
+</xterm>
+
+Makes a copy of the given frame.
+
+=== br::frame delete ===
+
+<xterm>
+br::frame delete //frame-id//
+</xterm>
+
+Deletes the given frame.
+
+=== br::frame mask ===
+
+<xterm>
+br::frame mask //frame-id// //mask-data//
+</xterm>
+
+Sets the pixel mask for the given frame.  The mask is specified as an array of data, one byte per pixel.  The dimensions of the mask must match the tile dimensions.  Any non-zero values mark the pixel as collidable.
+
+=== br::frame mask-from ===
+
+<xterm>
+br::frame mask-from //frame-id// //source-frame-id//
+</xterm>
+
+Sets the pixel mask for the given frame one of two ways, depending on the source frame.  If the source frame has a color key set, then the pixel mask is generated by non-transparent pixels.  If the source frame has no transparency set, then each pixel is desaturated and any pixels darker than middle gray are treated as solid.  This routine only accepts RGB-type frames.
+
+=== br::frame slice ===
+
+<xterm>
+br::frame slice //frame-id// //x// //y// //w// //h//
+</xterm>
+
+Copies out a section out of the given RGB frame and returns it as a new frame.
+
+=== br::frame convert ===
+
+<xterm>
+br::frame convert //frame-id// **none**
+br::frame convert //frame-id// **convo** //{ kernel-width kernel-height { kernel-data .. } divisor offset }//
+br::frame convert //frame-id// **br**
+br::frame convert //frame-id// **ct**
+br::frame convert //frame-id// **hl**
+br::frame convert //frame-id// **sl**
+br::frame convert //frame-id// **sat**
+br::frame convert //frame-id// **lut** { lookup-table-data .. }
+</xterm>
+
+Converts an RGB frame to almost any other frame type.  This routine modifies the frame in-place, so you should make a copy if you plan to use the original again.
+
+=== br::frame from-disk ===
+
+<xterm>
+br::frame from-disk //filename// (//r// //g// //b//)
+</xterm>
+
+Loads and decompresses the given image file into an RGB frame.  //This routine is only available if the brick engine has been built with SDL_image support.//
+
+=== br::frame from-buffer ===
+
+<xterm>
+br::frame from-buffer //buffer// (//r// //g// //b//)
+</xterm>
+
+Loads and decompresses an RGB frame from an image file stored in the given data buffer.  //This routine is only available if the brick engine has been built with SDL_image support.//
+
+==== Layers ====
+
+Layers are the basic building block of graphics programming with the Brick Engine.  A layer consists of a sprite list, a tile-based map, and a string list.  Any of these items can be omitted, and if all three are omitted, the layer is ignored.  Each layer also has a camera position, which determines what part of the layer (i.e. the layer's sprites and map..more on strings in a minute) is visible.  Strings are a little different, in that they're always rendered exactly where they're placed, and do not move when the layer camera is moved.  The layers are rendered in order of creation, and they can be swapped with one another.
+
+Each layer can also have a viewport set, which determines the region of the screen where the layer will actually be drawn.  (This allows for easy split-screen gaming, e.g. create a layer, set its viewport to the left half of the screen, then copy it into a new layer and set that layer's viewport to the right side of the screen.  Each layer's camera can then be focused on different players.)
+
+Layers have two attributes which are worth mentioning:  visibility and sorting.  Layer visibility doesn't really need further explanation.  The visibility attribute can be set at any time.  Sorting, however, is more complicated.  Some games may require that sprites are rendered in a certain order, e.g. a sprite that passes in front of another and then behind it, and sorting is a way to achieve that.  When layer sorting is enabled, all sprites in that layer are sorted by their z-hint attribute before rendering, and are then rendered in order.
+
+=== br::layer add ===
+
+<xterm>
+br::layer add
+</xterm>
+
+Adds a new layer and returns its ID.  When a layer is added, a sprite list, map, and string list are automatically created.
+
+=== br::layer swap ===
+
+<xterm>
+br::layer swap //first-layer-id// //second-layer-id//
+</xterm>
+
+Swaps the first layer with the second.
+
+=== br::layer remove ===
+
+<xterm>
+br::layer remove //layer-id//
+</xterm>
+
+Removes the specified layer.
+
+=== br::layer copy ===
+
+<xterm>
+br::layer copy //layer-id//
+</xterm>
+
+Makes a copy of the specified layer, assigning its properties (sprite list, map, etc) to the new layer.
+
+=== br::layer sprite-list ===
+
+<xterm>
+br::layer sprite-list //layer-id// (//list-id//)
+</xterm>
+
+Gets or sets the sprite list for the given layer.
+
+=== br::layer map ===
+
+<xterm>
+br::layer map (//map-id//)
+</xterm>
+
+Gets or sets the map for the given layer.
+
+=== br::layer string-list ===
+
+<xterm>
+br::layer string-list //layer-id// (//list-id//)
+</xterm>
+
+Gets or sets the string list for the given layer.
+
+=== br::layer visible ===
+
+<xterm>
+br::layer visible //layer-id// (//boolean//)
+</xterm>
+
+Gets or sets visibility on the given layer.
+
+=== br::layer sorted ===
+
+<xterm>
+br::layer sorted //layer-id// (//boolean//)
+</xterm>
+
+Gets or sets z-hint sorting on the given layer.
+
+=== br::layer view ===
+
+<xterm>
+br::layer view //layer-id// (//x1// //y1// //x2// //y2//)
+</xterm>
+
+Gets or sets the layer's viewport.
+
+=== br::layer camera ===
+
+<xterm>
+br::layer camera //layer-id// //x// //y//
+</xterm>
+
+Moves the layer camera to the given position.
+
+==== Maps ====
+
+The tile-based map is an important part of much of 2D game programming, and the Brick Engine has some useful map functionality built in.  Every display layer gets one map, and it's always optional whether or not to use the map for any given layer.
+
+A map consists of two things:  a set of tiles, and an array of map data.  So, to get started with the tile-based maps, you'll first create one or more tiles using the tile-handling commands.  You'll then add them to the map's tile index, a fixed-length array of tiles (there's a compile-time limit that determines the size of this array, by default limited to 4096 tiles), and set the tile size as well as the overall map dimensions.  Last, you'll set the map data, either one element at a time or all at once.  Each entry in the map data array is a number that corresponds to the tile index containing the tile you want to appear at that position on the map.
+
+So, if you have a map that with a width of 3 and a height of 2, the map data array will consist of six numbers.  The first three numbers indicate which tiles will show on the first row of the map, and the second three numbers indicate which tiles show on the second row of the map.
+
+If your map data has tile indices that haven't had any tiles set, then nothing will be rendered (e.g. a hole will appear, and whatever was underneath will be visible) at that point of the map.
+
+=== br::map create ===
+
+<xterm>
+br::map create
+</xterm>
+
+Creates a new map and returns its ID.
+
+=== br::map empty ===
+
+<xterm>
+br::map empty //map-id//
+</xterm>
+
+Removes map data and all tile associates.  This does not, however, free the tiles themselves.
+
+=== br::map delete ===
+
+<xterm>
+br::map delete //map-id//
+</xterm>
+
+Deletes a map and frees all of its associated resources.
+
+=== br::map size ===
+
+<xterm>
+br::map size //map-id// (//width// //height//)
+</xterm>
+
+Gets or sets the size of the given map.
+
+=== br::map tile-size ===
+
+<xterm>
+br::map tile-size //map-id// (//width// //height//)
+</xterm>
+
+Gets or sets the tile size for use on a given map.  All tiles subsequently loaded should match these dimensions.  Tiles larger than this size will be clipped, and tiles smaller than this size will have display aligned to the upper-left corner of the tile cell.
+
+=== br::map tile ===
+
+<xterm>
+br::map tile //map-id// //index// (//tile-id//)
+</xterm>
+
+Gets or sets the given tile index.
+
+=== br::map set-data ===
+
+<xterm>
+br::map set-data //map-id// //map-data//
+</xterm>
+
+Loads the data array into the given map.  The map array is an array of 16-bit (big endian) words, each word containing the index of the tile to display at that position on the map.
+
+=== br::map set-single ===
+
+<xterm>
+br::map set-single //map-id// //x// //y// //index//
+</xterm>
+
+Sets a single element in the map data to the given tile.
+
+=== br::map animate-tiles ===
+
+<xterm>
+br::map animate-tiles //map-id// //index//
+</xterm>
+
+Animates all map tiles.
+
+=== br::map reset-tiles ===
+
+<xterm>
+br::map reset-tiles //map-id//
+</xterm>
+
+Resets all animated tiles to their initial state.
+
+==== Tiles ====
+
+These routines allow you to create the tiles (and set the properties of same) that you can then load into your maps.
+
+=== br::tile create ===
+
+<xterm>
+br::tile create
+</xterm>
+
+Creates a new tile and returns its ID.
+
+=== br::tile delete ===
+
+<xterm>
+br::tile delete //tile-id//
+</xterm>
+
+Deletes the given tile and frees its associated image data.
+
+=== br::tile anim-type ===
+
+<xterm>
+br::tile anim-type //tile-id// (//animation-type//)
+</xterm>
+
+Gets or sets the animation type for the given tile.  The animation type must be one of **still**, **fwd**, **rev**, or **pp** (ping-pong).
+
+=== br::tile collides ===
+
+<xterm>
+br::tile collides //tile-id// (//collision-mode//)
+</xterm>
+
+Gets or sets the collision mode for the given tile.  The collision mode can be **off** to disable collision detection for the tile, **box** to enable bounding-box collision detection, or **pixel** to enable pixel-accurate collision detection.
+
+=== br::tile add-frame ===
+
+<xterm>
+br::tile add-frame //tile-id// //frame-id//
+</xterm>
+
+Loads the frame into the tile.
+
+=== br::tile add-frame-data ===
+
+<xterm>
+br::tile add-frame-data //tile-id// **none** //width// //height//
+br::tile add-frame-data //tile-id// **rgb** //width// //height// //rgb-data// (//r// //g// //b//)
+br::tile add-frame-data //tile-id// **br** //width// //height// //rgb-adj-data//
+br::tile add-frame-data //tile-id// **ct** //width// //height// //adj-data//
+br::tile add-frame-data //tile-id// **hl** //width// //height// //rgb-adj-data//
+br::tile add-frame-data //tile-id// **sl** //width// //height// //rgb-adj-data//
+br::tile add-frame-data //tile-id// **sat** //width// //height// //adj-data//
+br::tile add-frame-data //tile-id// **displ** //width// //height// //displacement-data//
+br::tile add-frame-data //tile-id// **convo** //width// //height// //pixel-mask// //{ kernel-width kernel-height { kernel-data .. } divisor offset }//
+br::tile add-frame-data //tile-id// **lut** //width// //height// //pixel-mask// { lookup-table-data .. }
+</xterm>
+
+Loads the given image data into the tile.  Please see the documentation for **br::frame create** has a detailed description of the options.
+
+=== br::tile pixel-mask ===
+
+<xterm>
+br::tile pixel-mask //tile-id// //frame-id// //mask-data//
+</xterm>
+
+Sets a pixel-accurate collision mask for the specified frame of the tile.  The mask is specified as an array of data, one byte per pixel.  The dimensions of the mask must match the tile dimensions.  Any non-zero value indicates a collidable pixel.
+
+=== br::tile pixel-mask ===
+
+<xterm>
+br::tile pixel-mask //tile-id// //frame-id// //source-frame-id//
+</xterm>
+
+Sets a pixel-accurate collision mask for the specified frame of the tile from a source frame.  If the source frame has a color key set, then the opaque pixels represent the collidable portions of the pixel mask.  If the source frame does not have a color key, then each pixel is desaturated and any pixel lighter than medium gray counts as an active pixel.
+
+=== br::tile animate ===
+
+<xterm>
+br::tile animate //tile-id//
+</xterm>
+
+Animates the given tile.
+
+=== br::tile reset ===
+
+<xterm>
+br::tile reset //tile-id//
+</xterm>
+
+Resets the given tile to its initial animation frame.
+
+==== Sprites ====
+
+Sprites are movable graphical elements that comprise the basic building blocks of most games you'll make with the Brick Engine.  They're similar to the idea of hardware sprites that you'll find in consoles and old computers, but with some very useful improvements.
+
+Each sprite can have an unlimited number of graphics frames added to it for animation, and each frame can have subframes that are rendered in series to aid in composition of sprites and effects.  The effects are the other unique thing about Brick Engine sprites.  A given sprite frame (or subframe) isn't just a block of RGB data, but can be one of a variety of color-manipulation effects, such as brightness or saturation/desaturation effects, or pixel-manipulation effects, such as user-defined convolution kernels.  These effects allow for a wide variety of engaging visuals, like shadows, real-time reflective mirrors, rippling water effects, heat-blurring of rocket jets, and so on.
+
+Sprites can also have two kinds of collision-detection enabled, bounding box collision detection (very fast) and pixel-accurate collision detection (not as fast, but as accurate as you specify).
+
+Brick Engine sprites offer two more seldom-used features that come in handy for specific situations, z-hinting and motion control programs.  Z-hinting allows sprites to be drawn in a certain order, e.g. if a sprite passes alternately in front of and behind a level object.  Z-hinting must enabled at for a given layer, and the z-hint values are otherwise ignored.  Motion control programs are little scripts attached to sprites that allow for some autonomous behavior, and have their own section in this document, which you ought to consult to learn more.
+
+=== br::sprite create ===
+
+<xterm>
+br::sprite create
+</xterm>
+
+Creates a new sprite and returns its ID.
+
+=== br::sprite copy ===
+
+<xterm>
+br::sprite copy //sprite-id//
+</xterm>
+
+Creates a duplicate of the given sprite and returns the new ID.
+
+=== br::sprite delete ===
+
+<xterm>
+br::sprite delete //sprite-id//
+</xterm>
+
+Deletes the given sprite.
+
+=== br::sprite frame ===
+
+<xterm>
+br::sprite frame //sprite-id// (//index//)
+</xterm>
+
+Gets or sets the frame to be displayed for the given sprite.
+
+=== br::sprite z-hint ===
+
+<xterm>
+br::sprite z-hint //sprite-id// (//z-value//)
+</xterm>
+
+Gets or sets the suggested render order for the given sprite.  Render order for sprites with the same zhint is undefined.  If render order is not important, this setting can be ignored.  If sprite sorting is disabled (the default) on a given layer, this setting does nothing.
+
+=== br::sprite collides ===
+
+<xterm>
+br::sprite collides //sprite-id// (//collision-mode//)
+</xterm>
+
+Gets or sets the collision mode for the given sprite.  If setting, the collision mode must be one of:  **off** to disable collision detection for the sprite, **box** to enable bounding-box collision detection, or **pixel** to enable pixel-accurate collision detection.
+
+=== br::sprite bounding-box ===
+
+<xterm>
+br::sprite bounding-box //sprite-id// //frame-id// (//x1// //y1// //x2// //y2//)
+</xterm>
+
+Gets or sets the bounding box for the given frame of the sprite.
+
+=== br::sprite pixel-mask ===
+
+<xterm>
+br::sprite pixel-mask //sprite-id// //frame-id// //mask-data//
+</xterm>
+
+Sets the pixel-accurate collision detection mask for the given frame to the given pixel mask.  The mask is specified as an array of data, one byte per pixel.  The dimensions of the mask must match the sprite dimensions.  Any non-zero value marks the pixel as collidable.
+
+=== br::sprite pixel-mask-from ===
+
+<xterm>
+br::sprite pixel-mask-from //sprite-id// //frame-id// //mask-data//
+</xterm>
+
+Sets the pixel-accurate collision mask for the specified frame of the sprite.  If the source frame has a color key set, then the opaque pixels represent the collidable portions of the pixel mask.  If the source frame does not have a color key, then each pixel is desaturated and any pixel lighter than medium gray counts as an active pixel.
+
+=== br::sprite position ===
+
+<xterm>
+br::sprite position //sprite-id// (//x// //y//)
+</xterm>
+
+Gets or sets the sprite position.
+
+=== br::sprite velocity ===
+
+<xterm>
+br::sprite velocity //sprite-id// (//x// //y//)
+</xterm>
+
+Gets or sets the velocity of the sprite.  Note that sprite velocity is only used in the collision detection routines.
+
+=== br::sprite add-frame ===
+
+<xterm>
+br::sprite add-frame //sprite-id// //frame-id//
+</xterm>
+
+Loads the frame into the sprite.
+
+=== br::sprite add-frame-data ===
+
+<xterm>
+br::sprite add-frame-data //sprite-id// **none** //width// //height//
+br::sprite add-frame-data //sprite-id// **rgb** //width// //height// //rgb-data// (//r// //g// //b//)
+br::sprite add-frame-data //sprite-id// **hl** //width// //height// //rgb-adj-data//
+br::sprite add-frame-data //sprite-id// **sl** //width// //height// //rgb-adj-data//
+br::sprite add-frame-data //sprite-id// **br** //width// //height// //rgb-adj-data//
+br::sprite add-frame-data //sprite-id// **ct** //width// //height// //adj-data//
+br::sprite add-frame-data //sprite-id// **sat** //width// //height// //adj-data//
+br::sprite add-frame-data //sprite-id// **displ** //width// //height// //displacement-data//
+br::sprite add-frame-data //sprite-id// **convo** //width// //height// //pixel-mask// //{ kernel-width kernel-height { kernel-data .. } divisor offset }//
+br::sprite add-frame-data //sprite-id// **lut** //width// //height// //pixel-mask// { lookup-table-data .. }
+</xterm>
+
+Loads one frame of image data into the given sprite.  Please see the documentation for **br::frame create** has a detailed description of the options.
+
+=== br::sprite add-subframe ===
+
+<xterm>
+br::sprite add-subframe //sprite-id// //sprite-frame-id// //frame-id//
+</xterm>
+
+Adds the frame to the sprite as a subframe on the given frame index.  Subframes are rendered in reverse order, i.e. the last-added subframe is rendered first.  This allows for easy compositing of sprite frames together (e.g. a shadow, a lighting effect, etc) into a single sprite.  Please note that this does not make a copy of the frame, however, so it may be necessary or desirable to make a copy of the frame before passing it into this routine.
+
+=== br::sprite load-program ===
+
+<xterm>
+br::sprite load-program //sprite-id// //motion-control-code//
+</xterm>
+
+This routine loads the given motion control program into the sprite.  Please see the section on Motion Control Programs for a detailed description of how to write these programs.
+
+==== Strings ====
+
+Strings are what you'll use to display blocks of text onscreen, such as in character dialogue or as part of a heads-up display.  These are the routines used to create and manipulate strings.  After creating and configuring your text strings, you'll need to add them to a layer's string list in order for them to be displayed.  //Note that strings are positioned absolutely on the display canvas and do not move when the layer camera moves.//
+
+=== br::string create ===
+
+<xterm>
+br::string create
+</xterm>
+
+Creates a new string and returns its id.
+
+=== br::string delete ===
+
+<xterm>
+br::string delete //string-id//
+</xterm>
+
+Deletes the given text string.
+
+=== br::string font ===
+
+<xterm>
+br::string font //string-id// //font-name//
+</xterm>
+
+Sets the font for the given string to the so-named font.
+
+=== br::string position ===
+
+<xterm>
+br::string position //string-id// //x// //y//
+</xterm>
+
+Adjusts the position of the given string.
+
+=== br::string text ===
+
+<xterm>
+br::string text //string-id// //text//
+</xterm>
+
+Sets the given string to the given text.  Respects the ascii control characters for tab stop, new line, carriage return.
+
+===== The Motion Control System =====
+
+==== The Language ====
+
+Motion control programs are very short programs, written in a custom language, that give sprites some simple autonomy, i.e. without having to run callbacks in the main game loop.  They're especially useful when the programmer is using a scripting language but still desires to animate great numbers of sprites., because they can eliminate the need to fire potentially-heavy script callbacks for sprite motion.
+
+Motion control programs can also be used to generate simple particle systems, environmental effects, and the like.  Note that motion control programs aren't intended to be a generic replacement for sprite movement.  For more detailed information, please see the in-depth guide at the [[motion control programs]] page.
+
+The language consists of the following instructions.  Instructions and their arguments appear one per line.  Whitespace and empty lines are ignored.
+
+^ Reading and setting variables ^^
+| set var, var/immediate | store the right-side value in the left-side named var |
+| add var, var/immediate | add the right-side value to the left-side named var |
+| stc var, var/immediate | stochastic alter the left-side var with a range of -(var/imm)..var/imm |
+| trk var, id | copy over the left-side named var contents from another sprite |
+| avg var, id | average the left-side named var contents with those of another sprite |
+^ Conditional instructions ^^
+| beq var, var/immediate | break (immediately exit the program) if equal |
+| bne var, var/immediate | break if not equal |
+| blt var, var/immediate | break if less than |
+| bgt var, var/immediate | break if greater than |
+| bmp id | break if there is a collision with the given map |
+| bnm id | break if there is a not a collision with the given map |
+| bst var/immediate | stochastic break, i.e. exit if random value between 0 and imm is zero |
+^ Sprite and list manipulation ^^
+| copy id | make a copy of the sprite and replace the current sprite with the copy for the remainder of the program |
+| ladd id | add the sprite to the given list |
+| lrem id | remove the sprite from the given list |
+| del | delete the sprite |
+^ Miscellaneous ^^
+| xchgp ptr | exchange the sprite's motion control program with another sprite's program |
+| sound id | play the sound |
+| eoc | end of code |
+
+The **var** is a named variable, one of the following:  **xpos**, **ypos**, **xvel**, **yvel**, **frame**, **tick**.  **xpos** and **ypos** refer to the sprite's position, and **xvel** and **yvel** refer to the sprite's velocity.  Immediate values are integers, and **id** values specify a list, sprite, map, or sound.  Argument order matches Intel-style assembly language syntax, i.e. instructions that set or change a variable have the destination given first (//set xpos, 4// can be read as //xpos = 4//)
+
+Every sprite also has its own internal tick counter, and this increments every time the sprite's motion-control program is run.
+
+==== Running motion control programs ====
+
+These routines execute the motion control programs for a sprite or for a list of sprites.
+
+=== br::motion single ===
+
+<xterm>
+br::motion single //sprite-id//
+</xterm>
+
+Executes the motion control program for the given sprite.  Returns 0 on success, or an error code on failure.
+
+=== br::motion list ===
+
+<xterm>
+br::motion list //list-id//
+</xterm>
+
+Executes the motion control program for every sprite in the given list.  Returns 0 on success, or an error code if any motion control program fails to execute.
+
+===== Introspection and Collision Detection =====
+
+==== Inspection ====
+
+It's often the case that you'll need to have a sprite query its surroundings or check to see if anything else is nearby.  If you wanted to have a sprite avoid a patch of water, for example, you could use the introspection routines to read the nearby tiles and have the sprite govern itself accordingly.  These introspection routines allow you to do that, along with a few other methods of examining the environment.
+
+=== br::inspect adjacent-tiles ===
+
+<xterm>
+br::inspect adjacent-tiles //sprite-id// //direction// //map-id//
+</xterm>
+
+Returns a list of tiles in the given map adjacent to the sprite.  The direction is one of **nw**, **n**, **ne**, **e**, **se**, **s**, **sw**, **w**.
+
+=== br::inspect obscured-tiles ===
+
+<xterm>
+br::inspect obscured-tiles //sprite-id// //map-id//
+</xterm>
+
+Returns a list of tiles in the given map covered by the sprite.
+
+=== br::inspect line-of-sight ===
+
+<xterm>
+br::inspect line-of-sight //sprite-id// //x-offset// //y-offset// //distance// //target-id// //map-id//
+</xterm>
+
+Performs a line-of-sight test to determine visibility from the originating sprite to the target sprite within the given map.  The **x-offset** and **y-offset** offsets determine the point, relative to the sprite's upper left corner, from which the visibility test is performed.  These offsets can be negative, performing the visibility test from a point outside the originating sprite's frame.  The **distance** value is the maximum range for the test.
+
+The originating sprite does not need to have collision detection enabled, but the target sprite must have collision detection enabled.  If the target sprite has bounding-box collision enabled, the four corners of the bounding box are checked for visibility from the originating sprite.  If the target sprite has pixel-accurate collision enabled, the visibility test is performed on the four corners of the pixel mask's bounding edges.
+
+=== br::inspect in-frame ===
+
+<xterm>
+br::inspect in-frame //list-id// //x1// //y1// //x2// //y2//
+</xterm>
+
+Returns a list of every sprite in the list that falls within the given rectangle.
+
+=== br::inspect near-point ===
+
+<xterm>
+br::inspect near-point //list-id// //x// //y// //dist//
+</xterm>
+
+Returns a list of every sprite in the list that falls within the specified distance of the point.
+
+=== br::inspect layer-vis ===
+
+<xterm>
+br::inspect layer-vis //layer-id// (//x-pad// //y-pad//)
+</xterm>
+
+Returns a list of every sprite on the given layer that is currently visible.  If **x-pad** and **y-pad** values are given, sprites within this number of pixels of the window boundary are included.
+
+==== Collisions ====
+
+These routines detect collisions among sprites, and between sprites and maps.
+
+=== br::collision map ===
+
+<xterm>
+br::collision map //sprite-id// //map-id// //(slip)//
+</xterm>
+
+Checks for collisions between the given sprite and map.  The optional slip argument indicates that, when a collision occurs, the sprite's path can be altered so many times to continue its motion around the map.  The result is a list:
+
+| | { | mode | x-stop | y-stop | x-go | y-go | } |
+| Index | | 0 | 1 | 2 | 3 | 4 | |
+
+The **mode** will be -1 to indicate that the sprite and map were colliding before motion began, 0 to indicate that no collision has occurred, or 1 to indicate that collision occurred during motion.  The **stop** values indicate the pixel distance before the sprite hits the map, while the **go** is the distance in each direction that the sprite may travel after collision.
+
+=== br::collision sprites ===
+
+<xterm>
+br::collision sprites //sprite-id// //list-id//
+</xterm>
+
+Tests the given sprite for collisions with all collidable members of the given sprite list and returns the results in a list of lists, arranged like so:
+
+| | { | { mode target x-hit y-hit x-dist y-dist } | .. | } |
+| Index | | 0 | 1 .. | |
+
+For each collision, the **mode** indicates the collision status:  -1 to indicate that the sprites were colliding before motion began or 1 to indicate that collision occurred during motion.  The **hit** values show the direction in which the collision took place.  The **dist** values show how far the sprite traveled before it hit the target.
+
+===== Utilities =====
+
+==== Timing ====
+
+A routine useful for setting up a basic delay loop and holding a steady framerate.
+
+=== br::delay ===
+
+<xterm>
+br::delay //fps//
+</xterm>
+
+If the time between calls to **br::delay** is less than necessary (i.e. the game would otherwise run too fast) to maintain the given **fps** rate, then the routine will delay until enough time has passed.  if the game is running too slowly to maintain the requested **fps** rate, **br::delay** will return the number of frames that must be skipped to maintain speed.
+
+==== Scheduled events ====
+
+The Brick Engine includes a simple event scheduler, but this is made largely unnecessary when writing Tcl-based games, and these routines aren't supported in the Tcl bindings.  I mention them only in the event that you've noticed a discrepancy among this and other Brick Engine documentation.  I'd strongly suggest using Tcl's native event-driven and threaded programming routines.

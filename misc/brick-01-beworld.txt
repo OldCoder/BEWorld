@@ -1,0 +1,55 @@
+The "bindings" and "engine" directories in  this  fileset  were  based
+originally on copies that were  checked out of upstream using  Fossil.
+The following patch was applied.
+
+Note: There's no need to use this patch.  It's provided for documenta-
+tion purposes only.
+
+--- brickengine.old/bindings/tcl/CMakeLists.txt
++++ brickengine/bindings/tcl/CMakeLists.txt
+@@ -2,7 +2,7 @@
+ # The project ..
+ project (tcl-br C)
+ set (tcl-br_version 5.4)
+-
++set(BRICK_INCLUDE_DIR __META_INCDIR__)
+ 
+ # and some cmake-directives.
+ cmake_minimum_required(VERSION 2.6)
+--- brickengine.old/bindings/tcl/extra/Findbrick.cmake
++++ brickengine/bindings/tcl/extra/Findbrick.cmake
+@@ -11,8 +11,9 @@
+ #  Redistribution and use is allowed according to the terms of the New
+ #  BSD license.
+ #  For details see the accompanying COPYING-CMAKE-SCRIPTS file.
+-#
+ 
++set(BRICK_LIBRARIES FALSE)
++set(BRICK_INCLUDE_DIRS FALSE)
+ 
+ if (BRICK_LIBRARIES AND BRICK_INCLUDE_DIRS)
+   # in cache already
+@@ -22,10 +23,7 @@
+     NAMES
+       brick.h
+     PATHS
+-      /usr/include
+-      /usr/local/include
+-      /opt/local/include
+-      /sw/include
++      __META_INCDIR__
+     PATH_SUFFIXES
+       brick
+   )
+@@ -34,10 +32,7 @@
+     NAMES
+       br
+     PATHS
+-      /usr/lib
+-      /usr/local/lib
+-      /opt/local/lib
+-      /sw/lib
++      __META_LIBDIR__
+   )
+ 
+   set(BRICK_INCLUDE_DIRS
